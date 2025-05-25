@@ -45,7 +45,16 @@ char recv_message[PACKETBUF_SIZE];
 int size=0;
 
 // Provide a function which fowards the message "forward_msg()"
-/*** YOUR CODE HERE ***/
+static void 
+forward_msg(const char * message) 
+{
+	//open the connection, if necessary
+	nullnet_buf = (uint8_t *)message;
+	nullnet_len = strlen(message);
+	//send the message
+	NETSTACK_NETWORK.output(NULL);
+	printf("Forwarded message: %s\n", message);
+}
 
 
 //---------------------------------------------------------------------------
@@ -61,6 +70,7 @@ broadcast_recv(const void *data, uint16_t len, const linkaddr_t *src, const link
 	printf("Broadcast message received from 0x%x%x, len: %d, [RSSI %d]\n\r", src->u8[0], src->u8[1], len, last_rssi);
 
 	// Copy the payload of the packetbuffer to a given memory location.
+<<<<<<< HEAD
 	/*** YOUR CODE HERE ***/
 	memset(recv_message, 0 ,PACKETBUF_SIZE);
 	packetbuf_copyto(recv_message);
@@ -71,6 +81,12 @@ broadcast_recv(const void *data, uint16_t len, const linkaddr_t *src, const link
 	nullnet_buf = (uint8_t*) recv_message;
 	nullnet_len = PACKETBUF_SIZE;
 	NETSTACK_NETWORK.output(NULL);
+=======
+	memcpy(recv_message, data, len);
+	recv_message[len] = '\0';      //make sure the message ends with unll
+	// Forward the message
+	forward_msg(recv_message);
+>>>>>>> 063985b3761fc5fbbf6f32f8895c7029a0b8c58c
 
 	leds_single_off(LEDS_LED2);
 }
