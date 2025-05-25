@@ -63,78 +63,110 @@ static void broadcast_recv(const void *data, uint16_t len, const linkaddr_t *src
 	leds_single_off(LEDS_LED2);
 }
 
-static int getLight(float m, float b, uint16_t adc_input){
-	adc_input = adc_input;
-	int light = (int)(m*adc_input*5/3/4096*200) + b;
+PROCESS(joystick_detect, "process that detects position of joystick");
+AUTOSTART_PROCESSES(&joystick_detect);
 
-	return light;
-}
-
-/**
- * CONNECTION DEFINITION END 
-*/
-
-//--------------------- PROCESS CONTROL BLOCK ---------------------
-PROCESS (ext_sensors_process, "External Sensors process");
-AUTOSTART_PROCESSES (&ext_sensors_process);
+PROCESS_THREAD(joystick_detect, ev, da){
+	PROCESS_BEGIN();
+	static uint16_t stick_up_down, stick_right_left;
+	static struct etimer et;
 
 
-//------------------------ PROCESS' THREAD ------------------------
-PROCESS_THREAD (ext_sensors_process, ev, data) {
-
-	/* variables to be used */
-	static struct etimer temp_reading_timer;
-	static uint16_t battery_value, p0_31_value;
-	int light;
-
-	PROCESS_BEGIN ();
-
-
-	printf("\r\nnrf52840 external sensors");
-	printf("\r\n====================================");
-
-	/*
-	 * set your group's channel
-	 */
 	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);
-
-	// Initialize NullNet
 	nullnet_set_input_callback(broadcast_recv);
+	etimer_set(&et, CLOCK_SECOND/32);
 
-	etimer_set(&temp_reading_timer, TEMP_READ_INTERVAL);
 
-	while (1) {
+	while(1){
+		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
-		PROCESS_WAIT_EVENT();  // let process continue
+		stick_right_left = saadc_sensor.value(P0_30);
+		stick_up_down = saadc_sensor.value(P0_31);
 
-		/* If timer expired, print sensor readings */
-	    if(ev == PROCESS_EVENT_TIMER) {
+		printf("value of UP: %d\n\r", stick_up_down);
+		printf("value of Left: %d\n\r", stick_right_left);
 
-	    	leds_single_on(LEDS_LED3);		
+		etimer_reset(&et);
+	}
 
-			/*
-	    	 * Read ADC values. Data is in the 12 MSBs
-	    	 */
-	    	battery_value = saadc_sensor.value(BATTERY_SENSOR);
-	    	p0_31_value = saadc_sensor.value(P0_31);
 
-	    	/*
-	    	 * Print Raw values
-	    	 */
-
-			light = getLight(1.478, 33.67, p0_31_value);
-
-	    	printf("\r\nP0.30 battery value [mV] = %d", battery_value*3600/4096);
-			printf("\r\nP0.31 Light value [lux] = %d", light);
-
-    		leds_single_off(LEDS_LED3);
-
-    		etimer_set(&temp_reading_timer, TEMP_READ_INTERVAL);
-	    }
-    }
-
-	PROCESS_END ();
+	PROCESS_END();
 }
 
+// void get_light_lux(uint16_t* value, float m, float b);
+
+// /**
+//  * CONNECTION DEFINITION END 
+// */
+
+// //--------------------- PROCESS CONTROL BLOCK ---------------------
+// PROCESS (ext_sensors_process, "External Sensors process");
+// AUTOSTART_PROCESSES (&ext_sensors_process);
+
+
+// //------------------------ PROCESS' THREAD ------------------------
+// PROCESS_THREAD (ext_sensors_process, ev, data) {
+
+// 	/* variables to be used */
+// 	static struct etimer temp_reading_timer;
+// 	static uint16_t p0_30_value, p0_31_value, light_value;
+
+
+// 	PROCESS_BEGIN ();
+
+
+// 	printf("\r\nnrf52840 external sensors");
+// 	printf("\r\n====================================");
+
+// 	/*
+// 	 * set your group's channel
+// 	 */
+// 	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);
+
+// 	// Initialize NullNet
+// 	nullnet_set_input_callback(broadcast_recv);
+
+// 	etimer_set(&temp_reading_timer, TEMP_READ_INTERVAL);
+
+// 	while (1) {
+
+// 		PROCESS_WAIT_EVENT();  // let process continue
+
+// 		/* If timer expired, print sensor readings */
+// 	    if(ev == PROCESS_EVENT_TIMER) {
+
+// 	    	leds_single_on(LEDS_LED3);		
+
+// 			/*
+// 	    	 * Read ADC values. Data is in the 12 MSBs
+// 	    	 */
+// 	    	p0_30_value = saadc_sensor.value(P0_30);
+// 	    	p0_31_value = saadc_sensor.value(P0_31);
+
+// 	    	/*
+// 	    	 * Print Raw values
+// 	    	 */
+
+// 	    	printf("\r\nP0.30 value [Raw] = %d", p0_30_value);
+// 	        printf("\r\nP0.31 value [Raw] = %d", p0_31_value);
+
+// 			light_value = p0_30_value;
+// 			get_light_lux(&light_value, 1.479, 33.671);
+// 			printf("\r\nLight is %d lux", light_value);
+			
+
+//     		leds_single_off(LEDS_LED3);
+
+//     		etimer_set(&temp_reading_timer, TEMP_READ_INTERVAL);
+// 	    }
+//     }
+
+// 	PROCESS_END ();
+// }
+
+// void get_light_lux(uint16_t* value, float m, float b){
+// 	uint16_t raw = *value;
+// 	*value = (uint16_t) (m * raw/4096 * 5 * 200 +b);
+// }
 
 

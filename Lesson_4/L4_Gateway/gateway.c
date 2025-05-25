@@ -33,10 +33,9 @@
 #include "net/nullnet/nullnet.h"    // Establish connections.
 #include "net/netstack.h"      		// Wireless-stack definitions
 #include "net/packetbuf.h"			// Packet buffer definitions
-#include "dev/leds.h"	
-#include "common/saadc-sensor.h"
-#include "common/temperature-sensor.h"			// Use LEDs.
-
+#include "dev/leds.h"				// Use LEDs.
+#include "common/temperature-sensor.h"	// Temperature sensor.
+#include "common/saadc-sensor.h"		// Saadc to read Battery Sensor.
 // Standard C includes:
 #include <stdio.h>			// For printf.
 
@@ -70,22 +69,23 @@ PROCESS_THREAD(gateway_main_process, ev, data) {
 	nullnet_set_input_callback(broadcast_recv);
 
 	// If all is OK, we can start the other two processes:
-	int temp, voltage;
-	char to_trans[100] = {0};
+	static struct etimer et;
+	etimer_set(&et, CLOCK_SECOND*5);
+	static char message_buffer[100] = {0};
 
 	while(1) {
 		// Contiki processes cannot start loops that never end.
-		temp = temperature_sensor.value(0);
-		voltage = (int)(saadc_sensor.value(BATTERY_SENSOR)* 3600UL / 4096);
-		memset(to_trans, 0, 100);
-		sprintf(to_trans, "\r\nBattery: %4d mV\n\rTemperature: %2d C", voltage, temp);
-
-		nullnet_buf = (uint8_t*) to_trans;
-		nullnet_len = strlen(to_trans);
+		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+		int battery = saadc_sensor.value(BATTERY_SENSOR)*3600UL / 4096;
+		int temperature = temperature_sensor.value(0)/4;
+		memset(message_buffer, 0 ,100);
+		sprintf(message_buffer, "Battery: %4d mV\r\nTemperature: %2d C\r\n", battery, temperature);
+		int length = strlen(message_buffer);
+		nullnet_buf = (uint8_t*) message_buffer;
+		nullnet_len = length;
 		NETSTACK_NETWORK.output(NULL);
 
-
-		PROCESS_WAIT_EVENT();
+		etimer_reset(&et);
 	}
 	PROCESS_END();
 }
