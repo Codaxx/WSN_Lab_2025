@@ -73,7 +73,7 @@ static l_table lut[TOTAL_NODES] = {
 		// First entry
 		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x01, .cost[0] = 0,
 		// Second entry
-		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x02, .cost[1] = 1,
+		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x02, .cost[1] = 1,     //changed for exercise 3?
 		// Third entry
 		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x02, .cost[2] = 2,
 		/*
@@ -171,15 +171,15 @@ static void unicast_recv(const void *data, uint16_t len, const linkaddr_t *src, 
 		printf("Packet reached destination at node %d\n", node_id);    //with code below transmission goes on
 
 		// YOUR CODE HERE for exercise 2
-		int next_id;    //return to next node id
+		int next_id =calculate_destination(node_id, TOTAL_NODES);    //return to next node id
 
-		if(rx_packet.message == 1){
-			//led light should rotate in opposite direction
-			next_id = (node_id - 2 + TOTAL_NODES) % TOTAL_NODES + 1;
-		} else {
-			//led light rotates in normal direction
-			next_id =calculate_destination(node_id, TOTAL_NODES);
-		}
+		// if(rx_packet.message == 1){
+		// 	//led light should rotate in opposite direction
+		// 	next_id = (node_id - 2 + TOTAL_NODES) % TOTAL_NODES + 1;
+		// } else {
+		// 	//led light rotates in normal direction
+		// 	next_id =calculate_destination(node_id, TOTAL_NODES);
+		// }
 		
 		tx_packet.dest.u8[0] = (next_id >> 8) & 0xFF;
 		tx_packet.dest.u8[1] = next_id & 0xFF;
@@ -211,7 +211,7 @@ PROCESS_THREAD(routing_process, ev, data) {
 	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);
 
 	// Set this node's address.
-	my_addr.u8[1] = 0x03;	// Change this value, so that this node will have the desired address and id.
+	my_addr.u8[1] = 0x02;	// Change this value, so that this node will have the desired address and id.
 	linkaddr_set_node_addr(&my_addr);
 
 	print_settings();
