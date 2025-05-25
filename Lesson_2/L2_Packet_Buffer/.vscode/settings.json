@@ -1,0 +1,18 @@
+{
+  "makefile.configurations": [
+    {
+      "name": "contiki_default",
+      "makeArgs": [
+        "TARGET=nrf52840",
+        "packetbuffer"
+      ]
+    },
+    {
+      "name": "contiki_upload_port0",
+      "makeArgs": [
+        "TARGET=nrf52840",
+        "packetbuffer.upload"
+      ]
+    }
+  ]
+}
