@@ -52,8 +52,11 @@ PROCESS_THREAD(debug_process, ev, data){
 
     // Main process loop:
     while(1) {
-
-
+        printf("Hello world\r\n");
+        for(int i=5;i<3057;i++){
+            printf("%d\r\n", i);
+        }
+        PROCESS_WAIT_EVENT();
     }
 
     PROCESS_END();
