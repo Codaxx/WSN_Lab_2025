@@ -173,11 +173,14 @@ static void unicast_recv(const void *data, uint16_t len, const linkaddr_t *src, 
 		// YOUR CODE HERE for exercise 2
 		int next_id;    //return to next node id
 
-		if(){
-
+		if(rx_packet.message == 1){
+			//led light should rotate in opposite direction
+			next_id = (node_id - 2 + TOTAL_NODES) % TOTAL_NODES + 1;
+		} else {
+			//led light rotates in normal direction
+			next_id =calculate_destination(node_id, TOTAL_NODES);
 		}
-		next_id =calculate_destination(node_id, TOTAL_NODES);
-
+		
 		tx_packet.dest.u8[0] = (next_id >> 8) & 0xFF;
 		tx_packet.dest.u8[1] = next_id & 0xFF;
 		tx_packet.message = rx_packet.message;
