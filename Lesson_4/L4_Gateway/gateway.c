@@ -33,7 +33,9 @@
 #include "net/nullnet/nullnet.h"    // Establish connections.
 #include "net/netstack.h"      		// Wireless-stack definitions
 #include "net/packetbuf.h"			// Packet buffer definitions
-#include "dev/leds.h"				// Use LEDs.
+#include "dev/leds.h"	
+#include "common/saadc-sensor.h"
+#include "common/temperature-sensor.h"			// Use LEDs.
 
 // Standard C includes:
 #include <stdio.h>			// For printf.
@@ -60,7 +62,7 @@ PROCESS_THREAD(gateway_main_process, ev, data) {
 	/*
 	* set your group's channel
 	*/
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 12);
 
 	print_settings();
 
@@ -68,9 +70,21 @@ PROCESS_THREAD(gateway_main_process, ev, data) {
 	nullnet_set_input_callback(broadcast_recv);
 
 	// If all is OK, we can start the other two processes:
+	int temp, voltage;
+	char to_trans[100] = {0};
 
 	while(1) {
 		// Contiki processes cannot start loops that never end.
+		temp = temperature_sensor.value(0);
+		voltage = (int)(saadc_sensor.value(BATTERY_SENSOR)* 3600UL / 4096);
+		memset(to_trans, 0, 100);
+		sprintf(to_trans, "\r\nBattery: %4d mV\n\rTemperature: %2d C", voltage, temp);
+
+		nullnet_buf = (uint8_t*) to_trans;
+		nullnet_len = strlen(to_trans);
+		NETSTACK_NETWORK.output(NULL);
+
+
 		PROCESS_WAIT_EVENT();
 	}
 	PROCESS_END();

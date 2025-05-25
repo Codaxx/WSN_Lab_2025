@@ -91,7 +91,7 @@ PROCESS_THREAD (on_board_sensors_process, ev, data) {
 	/*
 	 * set your group's channel
 	 */
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);
 
 	/* 
 	 * Initialize NullNet.
@@ -109,6 +109,7 @@ PROCESS_THREAD (on_board_sensors_process, ev, data) {
 
 	    	leds_single_on(LEDS_LED1);
 			printf("\r\nMy Battery Voltage [VDD] = %d mV", saadc_to_millivolts(saadc_sensor.value(BATTERY_SENSOR)));
+			printf("\r\nMy Battery Voltage [VDD] = %d C", temperature_sensor.value(0)/4);
     		leds_single_off(LEDS_LED1);
 
     		etimer_set(&temp_reading_timer, TEMP_READ_INTERVAL);

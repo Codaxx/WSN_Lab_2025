@@ -63,6 +63,13 @@ static void broadcast_recv(const void *data, uint16_t len, const linkaddr_t *src
 	leds_single_off(LEDS_LED2);
 }
 
+static int getLight(float m, float b, uint16_t adc_input){
+	adc_input = adc_input;
+	int light = (int)(m*adc_input*5/3/4096*200) + b;
+
+	return light;
+}
+
 /**
  * CONNECTION DEFINITION END 
 */
@@ -77,7 +84,8 @@ PROCESS_THREAD (ext_sensors_process, ev, data) {
 
 	/* variables to be used */
 	static struct etimer temp_reading_timer;
-	static uint16_t p0_30_value, p0_31_value;
+	static uint16_t battery_value, p0_31_value;
+	int light;
 
 	PROCESS_BEGIN ();
 
@@ -88,7 +96,7 @@ PROCESS_THREAD (ext_sensors_process, ev, data) {
 	/*
 	 * set your group's channel
 	 */
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);
 
 	// Initialize NullNet
 	nullnet_set_input_callback(broadcast_recv);
@@ -107,15 +115,17 @@ PROCESS_THREAD (ext_sensors_process, ev, data) {
 			/*
 	    	 * Read ADC values. Data is in the 12 MSBs
 	    	 */
-	    	p0_30_value = saadc_sensor.value(P0_30);
+	    	battery_value = saadc_sensor.value(BATTERY_SENSOR);
 	    	p0_31_value = saadc_sensor.value(P0_31);
 
 	    	/*
 	    	 * Print Raw values
 	    	 */
 
-	    	printf("\r\nP0.30 value [Raw] = %d", p0_30_value);
-	        printf("\r\nP0.31 value [Raw] = %d", p0_31_value);
+			light = getLight(1.478, 33.67, p0_31_value);
+
+	    	printf("\r\nP0.30 battery value [mV] = %d", battery_value*3600/4096);
+			printf("\r\nP0.31 Light value [lux] = %d", light);
 
     		leds_single_off(LEDS_LED3);
 

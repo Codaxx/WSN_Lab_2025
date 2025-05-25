@@ -174,7 +174,7 @@ static void unicast_recv(const void *data, uint16_t len, const linkaddr_t *src, 
 		int next_id;    //return to next node id
 
 		if(){
-			
+
 		}
 		next_id =calculate_destination(node_id, TOTAL_NODES);
 
@@ -204,7 +204,8 @@ PROCESS_THREAD(routing_process, ev, data) {
 	static packet_t tx_packet;	// If it is not static, bits of its members might change unexpectedly.
 
 	// Configure your team's channel (11 - 26).
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);           //Change the channel here, this time not in .h file anymore
+
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);
 
 	// Set this node's address.
 	my_addr.u8[1] = 0x03;	// Change this value, so that this node will have the desired address and id.
