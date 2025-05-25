@@ -116,7 +116,7 @@ PROCESS_THREAD(txRadio_process, ev, data) {
 	txPower = outputPower[0];	
 
 	// Configure your team's channel.
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 12);
 
 	// Configure Tx power .
 	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_TXPOWER, txPower);

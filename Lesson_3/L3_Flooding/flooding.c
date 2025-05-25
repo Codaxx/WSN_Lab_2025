@@ -58,13 +58,19 @@ broadcast_recv(const void *data, uint16_t len, const linkaddr_t *src, const link
 	// Get packet's RSSI.
 	signed short last_rssi = (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI);
 
-	printf("Broadcast message received from 0x%x%x, len: %d, [RSSI %d]\n", src->u8[0], src->u8[1], len, last_rssi);
+	printf("Broadcast message received from 0x%x%x, len: %d, [RSSI %d]\n\r", src->u8[0], src->u8[1], len, last_rssi);
 
 	// Copy the payload of the packetbuffer to a given memory location.
 	/*** YOUR CODE HERE ***/
+	memset(recv_message, 0 ,PACKETBUF_SIZE);
+	packetbuf_copyto(recv_message);
+	printf("Message is: {%s}\r\n", recv_message);
 
 	// Forward the message
 	/*** YOUR CODE HERE ***/
+	nullnet_buf = (uint8_t*) recv_message;
+	nullnet_len = PACKETBUF_SIZE;
+	NETSTACK_NETWORK.output(NULL);
 
 	leds_single_off(LEDS_LED2);
 }
@@ -130,7 +136,7 @@ PROCESS_THREAD(flooding_process, ev, data) {
 	static char my_message[] = "Hello";
 
 	// Configure your team's channel (11 - 26).
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);
 
 	print_settings();
 	check_for_invalid_addr();

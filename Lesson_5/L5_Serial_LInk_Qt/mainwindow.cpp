@@ -107,6 +107,7 @@ void MainWindow::on_pushButton_close_clicked()
 
     ui->pushButton_send->setEnabled(false);
     ui->plainTextEdit_command->setEnabled(false);
+    ui->Battery_info->clear();
 }
 
 // SLOT: Sends whatever is written on plainTextEdit_command to the USB port.
@@ -126,4 +127,11 @@ void MainWindow::receive()
 {
     QByteArray data = port.readAll();
     ui->textEdit_Status->insertPlainText(data);
+    QByteArray battery_value;
+    int index = data.indexOf("mV");
+    if( index != -1){
+        battery_value = data.mid(index+6, 4);
+        ui->Battery_info->clear();
+        ui->Battery_info->insertPlainText(battery_value);
+    }
 }

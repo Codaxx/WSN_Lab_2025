@@ -12,7 +12,9 @@
         "${HOME}/contiki-ng/os/dev",
         "${HOME}/contiki-ng/arch/platform/",
         "${HOME}/contiki-ng/arch/platform/nrf52840/",
-        "${HOME}/contiki-ng/arch/platform/nrf52840/dev"
+        "${HOME}/contiki-ng/arch/platform/nrf52840/dev",
+        "${HOME}/contiki-ng/**",
+        "/home/shh/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/include/"
       ],
       "compilerPath": "/usr/bin/gcc",
       "cStandard": "${default}",

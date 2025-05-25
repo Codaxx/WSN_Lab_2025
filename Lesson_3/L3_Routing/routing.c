@@ -190,7 +190,7 @@ PROCESS_THREAD(routing_process, ev, data) {
 	static packet_t tx_packet;	// If it is not static, bits of its members might change unexpectedly.
 
 	// Configure your team's channel (11 - 26).
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);
 
 	// Set this node's address.
 	my_addr.u8[1] = 0x02;	// Change this value, so that this node will have the desired address and id.

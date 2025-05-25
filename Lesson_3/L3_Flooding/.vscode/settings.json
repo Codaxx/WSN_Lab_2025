@@ -14,5 +14,9 @@
         "flooding.upload"
       ]
     }
-  ]
+  ],
+  "files.associations": {
+    "nullnet.h": "c",
+    "packetbuf.h": "c"
+  }
 }
