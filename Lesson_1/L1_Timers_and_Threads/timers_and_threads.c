@@ -38,28 +38,66 @@
 // Standard C includes:
 #include <stdio.h>		// For printf
 
+
 PROCESS(timers_and_threads_process, "Lesson 1: Timers and Threads");
-AUTOSTART_PROCESSES(&timers_and_threads_process);
+PROCESS(led2_blink, "led 2 is made to blink");
+PROCESS(exit_process_2, "exits the process 2");
+
+AUTOSTART_PROCESSES(&timers_and_threads_process, &led2_blink, &exit_process_2);
+
 
 
 //------------------------ PROCESS' THREAD ------------------------
+static struct ctimer ct;
 
+static void callback(void *ptr){
+    ctimer_reset(&ct);
+    leds_single_toggle(LEDS_LED1);
+}
 
 PROCESS_THREAD(timers_and_threads_process, ev, data) {
 
 	PROCESS_EXITHANDLER( printf("main_process terminated!\n"); )
     PROCESS_BEGIN();
 
-	static struct timer freq_timer;
-	timer_set(&freq_timer,CLOCK_SECOND);
+
+    ctimer_set(&ct, CLOCK_SECOND*2, callback, NULL);
 
     while (1){
-        if(timer_expired(&freq_timer)){
-            leds_single_toggle(LEDS_LED1);
-            timer_reset(&freq_timer);
-        }
+        PROCESS_WAIT_EVENT();
     }
 
     PROCESS_END();
 }
 
+PROCESS_THREAD(led2_blink, ev, data){
+    PROCESS_BEGIN();
+    PROCESS_EXITHANDLER(printf("led2 blinking process has terminated\n\r"));
+
+    static struct etimer et;
+
+    etimer_set(&et, CLOCK_SECOND);
+
+    while(1){
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+
+        leds_single_toggle(LEDS_LED2);
+        etimer_reset(&et);
+    }
+
+    PROCESS_END();
+}
+
+PROCESS_THREAD(exit_process_2, ev, data){
+    PROCESS_BEGIN();
+
+    static struct etimer et;
+
+    etimer_set(&et, CLOCK_SECOND*5);
+
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+    process_exit(&led2_blink);
+    etimer_stop(&et);
+
+    PROCESS_END();
+}

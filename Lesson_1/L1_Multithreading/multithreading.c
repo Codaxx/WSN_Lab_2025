@@ -39,42 +39,53 @@
 
 
 //--------------------- PROCESS CONTROL BLOCK ---------------------
-PROCESS(multithreading_proccess, "Lesson 1: Multithreading");
-AUTOSTART_PROCESSES(&multithreading_proccess);
+PROCESS(led1_blink_1, "led1 blinks each 1 second");
+PROCESS(led2_0_5, "led2 blinks each 0.5 seconds");
+PROCESS(led3_0_25, "led3 blinks each 0.25 seconds");
 
-//------------------------ PROCESS' THREAD ------------------------
-PROCESS_THREAD(multithreading_proccess, ev, data){
+AUTOSTART_PROCESSES(&led1_blink_1, &led2_0_5, &led3_0_25);
 
-	static struct etimer timerLED1, timerLED2, timerLED3;
 
+PROCESS_THREAD(led1_blink_1, ev, data){
 	PROCESS_BEGIN();
 
-	printf("Timers set!\r\n ");
-	/*
-	 * Set timers
-	 */
-	etimer_set(&timerLED1, CLOCK_SECOND);
-	etimer_set(&timerLED2, CLOCK_SECOND/2);
-	etimer_set(&timerLED3, CLOCK_SECOND/4);
-
-	while(1) {
-		PROCESS_WAIT_EVENT();
-		if(etimer_expired(&timerLED1)) {
-			printf("Timer expired for LED 1...\r\n");
-			leds_single_toggle(LEDS_LED1);
-			etimer_reset(&timerLED1);
-		}
-		else if(etimer_expired(&timerLED2)) {
-			printf("Timer expired for LED 2...\r\n");
-			leds_single_toggle(LEDS_LED2);
-			etimer_reset(&timerLED2);
-		}
-		else if(etimer_expired(&timerLED3)) {
-			printf("Timer expired for LED 3...\r\n");
-			leds_single_toggle(LEDS_LED3);
-			etimer_reset(&timerLED3);
-		}
+	static struct etimer et;
+	etimer_set(&et, CLOCK_SECOND);
+	while(1){
+		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+		leds_single_toggle(LEDS_LED1);
+		etimer_reset(&et);
 	}
+
+	PROCESS_END();
+}
+
+PROCESS_THREAD(led2_0_5, ev, data){
+	PROCESS_BEGIN();
+
+	static struct etimer et;
+	etimer_set(&et, CLOCK_SECOND/2);
+	while(1){
+		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+		leds_single_toggle(LEDS_LED2);
+		etimer_reset(&et);
+	}
+
+	PROCESS_END();
+}
+
+
+PROCESS_THREAD(led3_0_25, ev, data){
+	PROCESS_BEGIN();
+
+	static struct etimer et;
+	etimer_set(&et, CLOCK_SECOND/4);
+	while(1){
+		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+		leds_single_toggle(LEDS_LED3);
+		etimer_reset(&et);
+	}
+
 	PROCESS_END();
 }
 
