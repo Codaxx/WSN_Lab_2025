@@ -70,23 +70,11 @@ broadcast_recv(const void *data, uint16_t len, const linkaddr_t *src, const link
 	printf("Broadcast message received from 0x%x%x, len: %d, [RSSI %d]\n\r", src->u8[0], src->u8[1], len, last_rssi);
 
 	// Copy the payload of the packetbuffer to a given memory location.
-<<<<<<< HEAD
-	/*** YOUR CODE HERE ***/
-	memset(recv_message, 0 ,PACKETBUF_SIZE);
-	packetbuf_copyto(recv_message);
-	printf("Message is: {%s}\r\n", recv_message);
 
-	// Forward the message
-	/*** YOUR CODE HERE ***/
-	nullnet_buf = (uint8_t*) recv_message;
-	nullnet_len = PACKETBUF_SIZE;
-	NETSTACK_NETWORK.output(NULL);
-=======
 	memcpy(recv_message, data, len);
 	recv_message[len] = '\0';      //make sure the message ends with unll
 	// Forward the message
 	forward_msg(recv_message);
->>>>>>> 063985b3761fc5fbbf6f32f8895c7029a0b8c58c
 
 	leds_single_off(LEDS_LED2);
 }
