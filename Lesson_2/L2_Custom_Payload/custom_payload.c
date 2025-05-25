@@ -69,15 +69,23 @@ void broadcast_recv(const void *data, uint16_t len,
   					const linkaddr_t *src, const linkaddr_t *dest) 
 {
 	leds_single_on(LEDS_LED2);
-
+	
 	/* Get packet's RSSI */
 	signed short last_rssi = (signed short)packetbuf_attr(PACKETBUF_ATTR_RSSI);
 
 	printf("Got RX packet (broadcast) from: 0x%x%x, len: %d, RSSI: %d\r\n",src->u8[0], src->u8[1],len,last_rssi);
 
 	//Copy the payload of the packetbuffer to a given memory location
-	
+	contact rx_contacts;
+	packetbuf_copyto(&rx_contacts);
 	//print the content of the memory location
+	printf("Name: %s\n", rx_contacts.name);
+	printf("Surname: %s\n", rx_contacts.surname);
+	printf("Tel: ");
+	for(int i = 0; i < 10; i++) {
+		printf("%d", rx_contacts.tel[i]);
+	}
+	printf("\n\r");
 	
 }
 
@@ -98,7 +106,7 @@ PROCESS_THREAD(custom_payload_process, ev, data)
     PROCESS_BEGIN();
 
 	// set your group's channel
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 12);
 
 	// Change the transmission power
 	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_TXPOWER, 7);
@@ -120,7 +128,8 @@ PROCESS_THREAD(custom_payload_process, ev, data)
 		leds_single_on(LEDS_LED1);
 
 		//Copy the content of tx_contacts to the buffer.
-
+		nullnet_buf = (uint8_t *)&tx_contacts;
+		nullnet_len = sizeof(tx_contacts);
 
 		NETSTACK_NETWORK.output(NULL);
 		leds_single_off(LEDS_LED1);

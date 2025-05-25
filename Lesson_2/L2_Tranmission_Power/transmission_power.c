@@ -60,7 +60,7 @@ static radio_value_t outputPower[12] = {
 	RADIO_TXPOWER_TXPOWER_Neg40dBm
 };
 
-static uint8_t powerIndex= 0;
+static uint8_t powerIndex= 4;    //change transmission power here
 
 /**
  * Callback function for received packet processing.
@@ -82,8 +82,8 @@ void broadcast_recv(const void *data, uint16_t len,
 
 /*** MAIN PROCESS DEFINITION ***/
 PROCESS(transmission_power_process, "Lesson 2: Transmission Power");
-PROCESS(button_process, "Lesson 2: Change power");
-AUTOSTART_PROCESSES(&transmission_power_process,&button_process);
+// PROCESS(button_process, "Lesson 2: Change power");
+AUTOSTART_PROCESSES(&transmission_power_process);
 
 /*** MAIN THREAD ***/
 PROCESS_THREAD(transmission_power_process, ev, data) {
@@ -97,7 +97,7 @@ PROCESS_THREAD(transmission_power_process, ev, data) {
 	/*
 	 * set your group's channel
 	 */
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 12);
 
 	/*
 	 * Change the transmission power here

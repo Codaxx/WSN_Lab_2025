@@ -75,7 +75,7 @@ PROCESS_THREAD(simple_packet_process, ev, data) {
 	PROCESS_BEGIN();
 
 	// set your group's channel
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 12);
 
 	// Initialize NullNet
 	nullnet_set_input_callback(broadcast_recv);

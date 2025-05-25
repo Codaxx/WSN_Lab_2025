@@ -42,7 +42,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-static uint8_t my_packetbuffer[PACKETBUF_SIZE];
+static uint8_t my_packetbuffer[PACKETBUF_SIZE];    //should i comment it out?
 
 // Definition of Processes
 PROCESS(packet_buffer_process, "Lesson 2: Packet Buffer");
@@ -148,14 +148,26 @@ PROCESS_THREAD(packet_buffer_process, ev, data)
 
 static void copy_and_print_packetbuffer(){
 	//copy the payload of the packetbuffer to a given memory location
-
+	uint8_t buffer[PACKETBUF_SIZE];
+	int len = packetbuf_copyto(buffer);
 	//print the content of the memory location
-
+	printf("Payload copy (length=%d)", len);
+	for (int i=0; i < len; i++) {
+		printf("%c", buffer[i]);
+	}
+	printf("\n");
 }
 
 static void print_packetbuffer(){
 	//retrieve the pointer to the payload and the length of it
+	uint8_t *data_ptr = packetbuf_dataptr();
+	uint16_t len = packetbuf_datalen();
 
+	printf("Payload direct access (length=%d)", len);
+	for (int i=0; i < len; i++) {
+		printf("%c", data_ptr[i]);
+	}
+	printf("\n");
 	//use the retrieved information to print the content of the payload
 
 }
