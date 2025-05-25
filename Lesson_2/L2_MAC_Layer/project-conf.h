@@ -3,11 +3,11 @@
 
 
 // PHY LAYER PARAMETERS
-#define CHANNEL 26
-#define TX_POWER (radio_value_t) RADIO_TXPOWER_TXPOWER_Pos4dBm
+#define CHANNEL 12                //change channel according to group number
+#define TX_POWER (radio_value_t) RADIO_TXPOWER_TXPOWER_Pos4dBm       //why do we choose 4dBm, is that the most stable transmission power?
 
 // MEASUREMENT PARAMETERS (Inter-packet-time: 128 ticks = 1 second):
-#define MAX_MESSAGE_LENGTH 	100		//  Message length (values btw 8-100)
+#define MAX_MESSAGE_LENGTH 	8		//  Message length (values btw 8-100)    change here in Exercise 2
 #define MAX_NUM_TX_PACKETS	200		//  Maximum total number of transmitted packets.
 
 
