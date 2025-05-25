@@ -149,7 +149,7 @@ static void enqueue_packet(packet_t tx_packet){
 }
 
 
-// Defines the behavior of a connection upon receiving data.
+// Defines the behavior of a connection upon receiving data.                   //Change code here in Exercise 2 to make a endless loop
 static void unicast_recv(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest){
 	packet_t rx_packet;
 	packet_t tx_packet;
@@ -167,11 +167,25 @@ static void unicast_recv(const void *data, uint16_t len, const linkaddr_t *src, 
 	// Check if packet reached destination
 	if(linkaddr_cmp(&rx_packet.dest, &linkaddr_node_addr))
 	{
-		printf("Packet reached destination \n");
-		// YOUR CODE HERE
+		//printf("Packet reached destination \n");
+		printf("Packet reached destination at node %d\n", node_id);    //with code below transmission goes on
+
+		// YOUR CODE HERE for exercise 2
+		int next_id;    //return to next node id
+
+		if(){
+			
+		}
+		next_id =calculate_destination(node_id, TOTAL_NODES);
+
+		tx_packet.dest.u8[0] = (next_id >> 8) & 0xFF;
+		tx_packet.dest.u8[1] = next_id & 0xFF;
+		tx_packet.message = rx_packet.message;
+
 	}
 	else
 	{
+		//no need to change here, if addr does not match simply forward the message
 		tx_packet.dest.u8[0] = rx_packet.dest.u8[0];
 		tx_packet.dest.u8[1] = rx_packet.dest.u8[1];
 		tx_packet.message = rx_packet.message;
@@ -190,10 +204,10 @@ PROCESS_THREAD(routing_process, ev, data) {
 	static packet_t tx_packet;	// If it is not static, bits of its members might change unexpectedly.
 
 	// Configure your team's channel (11 - 26).
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);           //Change the channel here, this time not in .h file anymore
 
 	// Set this node's address.
-	my_addr.u8[1] = 0x02;	// Change this value, so that this node will have the desired address and id.
+	my_addr.u8[1] = 0x03;	// Change this value, so that this node will have the desired address and id.
 	linkaddr_set_node_addr(&my_addr);
 
 	print_settings();
