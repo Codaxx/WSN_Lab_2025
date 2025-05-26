@@ -43,6 +43,8 @@
 
 // Reading frequency in seconds.
 #define TEMP_READ_INTERVAL CLOCK_SECOND*1
+#define HIGH_THRESHOLD  3500
+#define LOW_THRESHOLD   600
 
 // Defines a custom event to be used as inter-process communication.
 
@@ -70,11 +72,13 @@ PROCESS_THREAD(joystick_detect, ev, da){
 	PROCESS_BEGIN();
 	static uint16_t stick_up_down, stick_right_left;
 	static struct etimer et;
+   char to_trans[100] = {0};
+   uint8_t length = 0;
 
 
 	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);
 	nullnet_set_input_callback(broadcast_recv);
-	etimer_set(&et, CLOCK_SECOND/32);
+	etimer_set(&et, CLOCK_SECOND);
 
 
 	while(1){
@@ -83,8 +87,35 @@ PROCESS_THREAD(joystick_detect, ev, da){
 		stick_right_left = saadc_sensor.value(P0_30);
 		stick_up_down = saadc_sensor.value(P0_31);
 
+      stick_right_left = stick_right_left>=60000?10:stick_right_left;
+      stick_right_left = stick_right_left>=4096?4096:stick_right_left;
+      stick_up_down = stick_up_down>=60000?10:stick_up_down;
+      stick_up_down = stick_up_down>=4096?4096:stick_up_down;
+
 		printf("value of UP: %d\n\r", stick_up_down);
 		printf("value of Left: %d\n\r", stick_right_left);
+
+      memset(to_trans, 0, sizeof(to_trans));
+
+      if(stick_right_left >= HIGH_THRESHOLD)
+         sprintf(to_trans, "The position of joystick is RIGHT");
+      else if(stick_right_left <= LOW_THRESHOLD)
+         sprintf(to_trans, "The position of joystick is LEFT");
+
+      if(stick_up_down >= HIGH_THRESHOLD)
+         sprintf(to_trans, "The position of joystick is UP");
+      else if(stick_up_down <= LOW_THRESHOLD)
+         sprintf(to_trans, "The position of joystick is DOWN");
+
+      length = strlen(to_trans);
+      if(length){
+         nullnet_buf = (uint8_t*) to_trans;
+         nullnet_len = length;
+         NETSTACK_NETWORK.output(NULL);
+         printf("%s\n\r", to_trans);
+      }
+      
+
 
 		etimer_reset(&et);
 	}
