@@ -73,7 +73,7 @@ static l_table lut[TOTAL_NODES] = {
 		// First entry
 		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x01, .cost[0] = 0,
 		// Second entry
-		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x02, .cost[1] = 1,     //changed for exercise 3?
+		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x02, .cost[1] = 1,     //changed for exercise 3
 		// Third entry
 		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x02, .cost[2] = 2,
 		/*
@@ -104,6 +104,29 @@ static l_table lut[TOTAL_NODES] = {
 	 */
 };
 
+static l_table lut_reverse[TOTAL_NODES] = {
+	{
+		// First entry
+		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x01, .cost[0] = 0,
+		// Second entry
+		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x02, .cost[1] = 2,     //changed for exercise 3
+		// Third entry
+		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x02, .cost[2] = 1,
+	},
+
+	{
+		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x03, .cost[0] = 1,
+		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x02, .cost[1] = 0,
+		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x03, .cost[2] = 2,
+	},
+
+	{
+		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x01, .cost[0] = 2,
+		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x01, .cost[1] = 1,
+		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x03, .cost[2] = 0,
+	}
+};
+
 //--------------------- PROCESS CONTROL BLOCK ---------------------
 PROCESS(routing_process, "Lesson 3: Routing");
 PROCESS(send_process, "Process to send packets");
@@ -113,14 +136,23 @@ AUTOSTART_PROCESSES(&routing_process, &send_process);
 
 static void send_packet(packet_t tx_packet){
 	uint8_t i;
+	l_table* current_lut;
+
+	//Implementation for exercise 3
+	if (tx_packet.message == 1) {
+		current_lut = &lut_reverse[node_id -1];
+	} else {
+		current_lut = &lut[node_id -1];
+	}
+
 	// Define next hop and forward packet
 	for(i = 0; i < TOTAL_NODES; i++)
 	{
-		if(linkaddr_cmp(&tx_packet.dest, &lut[node_id - 1].dest[i]))
+		if(linkaddr_cmp(&tx_packet.dest, &current_lut[node_id - 1].dest[i]))
 		{
 			nullnet_buf = (uint8_t*) &tx_packet;
 			nullnet_len = sizeof(packet_t);
-			NETSTACK_NETWORK.output(&lut[node_id - 1].next_hop[i]);
+			NETSTACK_NETWORK.output(&current_lut[node_id - 1].next_hop[i]);
 			break;
 		}
 	}
@@ -172,14 +204,6 @@ static void unicast_recv(const void *data, uint16_t len, const linkaddr_t *src, 
 
 		// YOUR CODE HERE for exercise 2
 		int next_id =calculate_destination(node_id, TOTAL_NODES);    //return to next node id
-
-		// if(rx_packet.message == 1){
-		// 	//led light should rotate in opposite direction
-		// 	next_id = (node_id - 2 + TOTAL_NODES) % TOTAL_NODES + 1;
-		// } else {
-		// 	//led light rotates in normal direction
-		// 	next_id =calculate_destination(node_id, TOTAL_NODES);
-		// }
 		
 		tx_packet.dest.u8[0] = (next_id >> 8) & 0xFF;
 		tx_packet.dest.u8[1] = next_id & 0xFF;
