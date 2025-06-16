@@ -1,0 +1,45 @@
+#ifndef PROJECT_CONF_H_
+#define PROJECT_CONF_H_
+
+// PHY LAYER PARAMETERS
+#define GROUP_CHANNEL 12
+// Use the lowest value to create multi-hop network.
+#define TX_POWER 7
+#define TX_POWER_MAX 7
+
+// MAC LAYER PARAMETERS   default: checkrate are csma, contikimac and 8
+#define NETSTACK_CONF_MAC csma_driver        //*nullmac_driver, or csma_driver
+#define NETSTACK_CONF_RDC nullrdc_driver	 // *nullrdc_driver, or contikimac_driver
+#define NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE 64 // *16 the checkrate in Hz. It should be a power of 2!
+
+// Max number of nodes in the network.
+#define MASTER_NODE_ID 61993
+
+
+// logging level
+#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_MODULE "LEACH"
+
+
+// Hello Process Parameters for system 
+#define HELLO_INTERVAL 5
+#define HELLO_SEQ_ID   0  
+
+
+
+/************PACKET TYPES *****************/
+/*TYPE MAPPING
+ * 0- set  
+ * 1- Broadcast Hello packet
+ 
+ * */
+/* ==== BROADCAST MESSAGE TYPES ==== */
+#define HELLO_PACKET 1               // Initial broadcast to build neighbor and route table.
+
+
+/* ==== UNICAST MESSAGE TYPES  ====*/
+#define RE_HELLO_PACKET 2
+
+
+
+#endif /* PROJECT_CONF_H_ */
