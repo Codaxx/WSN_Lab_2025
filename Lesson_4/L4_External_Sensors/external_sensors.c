@@ -41,6 +41,10 @@
 #include <stdio.h>      // For printf.
 #include <string.h>
 
+
+//Code for joystick implementation 
+
+
 // Reading frequency in seconds.
 #define TEMP_READ_INTERVAL CLOCK_SECOND*1
 #define HIGH_THRESHOLD  3500
@@ -124,6 +128,8 @@ PROCESS_THREAD(joystick_detect, ev, da){
 	PROCESS_END();
 }
 
+
+//Code for light sensor implementation 
 // void get_light_lux(uint16_t* value, float m, float b);
 
 // /**
@@ -197,7 +203,7 @@ PROCESS_THREAD(joystick_detect, ev, da){
 
 // void get_light_lux(uint16_t* value, float m, float b){
 // 	uint16_t raw = *value;
-// 	*value = (uint16_t) (m * raw/4096 * 5 * 200 +b);
+// 	*value = (uint16_t) (m * raw/4096 * 3.3 * 200 +b);
 // }
 
 
