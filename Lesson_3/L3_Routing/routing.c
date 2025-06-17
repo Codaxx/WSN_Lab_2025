@@ -104,39 +104,39 @@ static l_table lut[TOTAL_NODES] = {
 	 */
 };
 
-// static l_table lut_reverse[TOTAL_NODES] = {
+static l_table lut_reverse[TOTAL_NODES] = {
 
-// 	/*
-// 	 * First node lookup table
-// 	 * */
-// 	{
-// 		// First entry
-// 		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x01, .cost[0] = 0,
-// 		// Second entry
-// 		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x02, .cost[1] = 2,
-// 		// Third entry
-// 		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x02, .cost[2] = 1,
-// 	},
+	/*
+	 * First node lookup table
+	 * */
+	{
+		// First entry
+		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x01, .cost[0] = 0,
+		// Second entry
+		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x02, .cost[1] = 2,
+		// Third entry
+		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x02, .cost[2] = 1,
+	},
 
-// 	/*
-// 	 * Second node lookup table
-// 	 * */
-// 	{
-// 		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x03, .cost[0] = 1,
-// 		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x02, .cost[1] = 0,
-// 		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x03, .cost[2] = 2,
-// 	},
+	/*
+	 * Second node lookup table
+	 * */
+	{
+		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x03, .cost[0] = 1,
+		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x02, .cost[1] = 0,
+		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x03, .cost[2] = 2,
+	},
 
-// 	/*
-// 	 * Third node lookup table
-// 	 * */
-// 	{
-// 		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x01, .cost[0] = 2,
-// 		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x01, .cost[1] = 1,
-// 		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x03, .cost[2] = 0,
-// 	}
-// 	,
-// };
+	/*
+	 * Third node lookup table
+	 * */
+	{
+		.dest[0].u8[1] = 0x01, .next_hop[0].u8[1] = 0x01, .cost[0] = 2,
+		.dest[1].u8[1] = 0x02, .next_hop[1].u8[1] = 0x01, .cost[1] = 1,
+		.dest[2].u8[1] = 0x03, .next_hop[2].u8[1] = 0x03, .cost[2] = 0,
+	}
+	,
+};
 
 //--------------------- PROCESS CONTROL BLOCK ---------------------
 PROCESS(routing_process, "Lesson 3: Routing");
@@ -147,23 +147,23 @@ AUTOSTART_PROCESSES(&routing_process, &send_process);
 
 static void send_packet(packet_t tx_packet){
 	uint8_t i;
-	// l_table* current_lut;
+	l_table* current_lut;            //define new table to store current lut
 
 
-	// if(tx_packet.message == 1) {
-	// 	current_lut = &lut_reverse[node_id-1];
-	// } else {
-	// 	current_lut = &lut[node_id -1];
-	// }
+	if(tx_packet.message == 1) {	//decide which lut to be used 
+		current_lut = &lut_reverse[node_id-1];
+	} else {
+		current_lut = &lut[node_id -1];
+	}
 
 	// Define next hop and forward packet
 	for(i = 0; i < TOTAL_NODES; i++)
 	{
-		if(linkaddr_cmp(&tx_packet.dest, &lut[node_id - 1].dest[i]))    //in exercise 3 change lut name here to current_lut
+		if(linkaddr_cmp(&tx_packet.dest, &current_lut[node_id - 1].dest[i]))    //in exercise 3 change lut name here to current_lut
 		{
 			nullnet_buf = (uint8_t*) &tx_packet;
 			nullnet_len = sizeof(packet_t);
-			NETSTACK_NETWORK.output(&lut[node_id - 1].next_hop[i]);		 //in exercise 3 change lut name here to current_lut
+			NETSTACK_NETWORK.output(&current_lut[node_id - 1].next_hop[i]);		 //in exercise 3 change lut name here to current_lut
 			break;
 		}
 	}
@@ -238,7 +238,7 @@ PROCESS_THREAD(routing_process, ev, data) {
 	static packet_t tx_packet;	// If it is not static, bits of its members might change unexpectedly.
 
 	// Configure your team's channel (11 - 26).
-	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,26);
+	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,12);
 
 	// Set this node's address.
 	my_addr.u8[1] = 0x02;	// Change this value, so that this node will have the desired address and id.
