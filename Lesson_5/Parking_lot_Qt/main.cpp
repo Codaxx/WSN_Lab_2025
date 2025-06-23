@@ -8,6 +8,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     MainWindow w;
     w.setWindowTitle("Parking Lot Monitor");
+    // w.setFixedSize(1850,1080);           //expand to full screen
     w.show();
 
     return a.exec();
