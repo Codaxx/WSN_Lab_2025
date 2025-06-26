@@ -89,8 +89,9 @@ build/nrf52840/dk/obj/simple_packet.o: simple_packet.c \
  /home/kkwsn/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h \
  /home/kkwsn/contiki-ng/os/sys/node-id.h \
  /home/kkwsn/contiki-ng/os/sys/log.h \
- /home/kkwsn/contiki-ng/os/sys/log-conf.h packet_structure.h \
- project-conf.h
+ /home/kkwsn/contiki-ng/os/sys/log-conf.h \
+ /home/kkwsn/contiki-ng/os/lib/list.h \
+ /home/kkwsn/contiki-ng/os/lib/memb.h packet_structure.h project-conf.h
 
 /home/kkwsn/contiki-ng/os/contiki.h:
 
@@ -277,6 +278,10 @@ project-conf.h:
 /home/kkwsn/contiki-ng/os/sys/log.h:
 
 /home/kkwsn/contiki-ng/os/sys/log-conf.h:
+
+/home/kkwsn/contiki-ng/os/lib/list.h:
+
+/home/kkwsn/contiki-ng/os/lib/memb.h:
 
 packet_structure.h:
 

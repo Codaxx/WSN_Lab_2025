@@ -73,6 +73,8 @@
   "C_Cpp_Runner.useLinkTimeOptimization": false,
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
-    "node-id.h": "c"
+    "node-id.h": "c",
+    "contiki.h": "c",
+    "nullnet.h": "c"
   }
 }

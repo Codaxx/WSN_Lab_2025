@@ -3,14 +3,15 @@
 /*******************STRUCTURES**********************/
 // This structure is used routing table entries.
 // Total byte = 8 byte.
-typedef struct{
+typedef struct rt_entry{
 	uint8_t type;// Standard C includes:
-	uint8_t dest;
-	uint8_t next_hop;
+	linkaddr_t dest;
+	linkaddr_t next_hop;
 	uint8_t tot_hop;		// Total hop number for this destination.
 	int16_t metric;
 	uint16_t seq_no;
-	// This structure can be extended with some additional flags.
+	// used for constructiong the local routing table
+	struct rt_entry *next;
 }rt_entry;
 
 typedef struct{
@@ -28,10 +29,6 @@ typedef struct{
 	rt_entry table[MAX_NODES]; // battery status
   uint8_t energy_level;
 }node_info;
-
-
-
-
 
 struct node_reply_packet {
   uint8_t    type;                
