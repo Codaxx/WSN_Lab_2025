@@ -26,7 +26,9 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
 
-    m_record = false;
+    // m_record = false;
+
+    //set up ui from .ui file
     ui->setupUi(this);
 
     // Get available COM Ports
@@ -35,12 +37,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     for (int i = 0; i < ports.size(); i++) {
         ui->comboBox_Interface->addItem(ports.at(i).portName.toLocal8Bit().constData());
     }
-    QObject::connect(uart, SIGNAL(debugReceived(QString)), this, SLOT(receive(QString)));
-    QObject::connect(uart, SIGNAL(packetReceived(QByteArray)), this, SLOT(packet_received(QByteArray)));
 
     //Warning message if no USB port is found
     if (ui->comboBox_Interface->count() == 0){
-        ui->textEdit_Status->insertPlainText("No USB ports available.\nConnect a USB device and try again.");
+        ui->textEdit_Status->insertPlainText("No USB ports available.\n");
     }
 
     //Initialize the topology graph
@@ -144,28 +144,28 @@ void MainWindow::on_pushButton_stop_clicked() {
     }
 }
 
-void MainWindow::on_pushButton_copyTable_clicked() {
-    int rows = ui->tableWidget->rowCount();
-    int cols = ui->tableWidget->columnCount();
-    QString selected_text;
+// void MainWindow::on_pushButton_copyTable_clicked() {
+//     int rows = ui->tableWidget->rowCount();
+//     int cols = ui->tableWidget->columnCount();
+//     QString selected_text;
 
-    for (int row = 0; row < rows; row++) {
-        for (int col = 0; col < cols; col++) {
-            if (ui->tableWidget->item(row, col)) {
-                selected_text.append(ui->tableWidget->item(row, col)->text());
-                //qDebug() << row << ", " << col << ": " << ui->tableWidget->item(row, col)->text();
-            }
-            selected_text.append('\t');
-        }
-        selected_text.append('\n');
-    }
+//     for (int row = 0; row < rows; row++) {
+//         for (int col = 0; col < cols; col++) {
+//             if (ui->tableWidget->item(row, col)) {
+//                 selected_text.append(ui->tableWidget->item(row, col)->text());
+//                 //qDebug() << row << ", " << col << ": " << ui->tableWidget->item(row, col)->text();
+//             }
+//             selected_text.append('\t');
+//         }
+//         selected_text.append('\n');
+//     }
 
-    QApplication::clipboard()->setText(selected_text);
-}
+//     QApplication::clipboard()->setText(selected_text);
+// }
 
-void MainWindow::on_pushButton_clearTable_clicked() {
-    ui->tableWidget->setRowCount(0);
-}
+// void MainWindow::on_pushButton_clearTable_clicked() {
+//     ui->tableWidget->setRowCount(0);
+// }
 
 void MainWindow::on_pushButtonSetPower_clicked()
 {
