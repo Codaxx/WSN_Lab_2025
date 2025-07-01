@@ -1,9 +1,34 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+//Libraries needed for implementation
+#include <qdebug.h>
+#include <math.h>
+#include <vector>
+
+#include <QSqlDatabase>
+#include <QSqlDriver>
+#include <QSqlError>
+#include <QSqlQuery>
+#include <QFile>
+#include <QDir>
+#include <QFileDialog>
+
+#include <QGraphicsScene>
+#include <QGraphicsSceneMouseEvent>
+#include <QPainter>
+#include <QStyleOption>
+#include <QtMath>
+#include <QtWidgets>
+
+#include <QMessageBox>
+#include <QPixmap>
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
+
     m_record = false;
     ui->setupUi(this);
+
     // Get available COM Ports
     this->uart = new Uart(this);
     QList<QextPortInfo> ports = uart->getUSBPorts();
@@ -12,6 +37,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
     QObject::connect(uart, SIGNAL(debugReceived(QString)), this, SLOT(receive(QString)));
     QObject::connect(uart, SIGNAL(packetReceived(QByteArray)), this, SLOT(packet_received(QByteArray)));
+
+    //Warning message if no USB port is found
+    if (ui->comboBox_Interface->count() == 0){
+        ui->textEdit_Status->insertPlainText("No USB ports available.\nConnect a USB device and try again.");
+    }
+
+    //Initialize the topology graph
+    widget = new GraphWidget;
+    for (int i = 0; i<8; ++i){
+        nodes.push_back(new Node(widget, this));
+    }
+    createDockWindows();
 }
 
 MainWindow::~MainWindow() {
