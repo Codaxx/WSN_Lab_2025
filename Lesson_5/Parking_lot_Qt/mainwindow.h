@@ -65,6 +65,14 @@ private:
     std::vector<Edge *> edges;
     std::vector<Edge *> last_path;
 
+    struct SensorState {
+        double light = -1;
+        double distance = -1;
+    };
+
+    QMap<int, SensorState> nodeStates;
+
+    void evaluateParkingStatus(int nodeID);
     void createDockWindows();
 
 
@@ -79,7 +87,6 @@ private slots:
     void on_pushButton_start_clicked();
     void on_pushButton_stop_clicked();
     void packet_received(QByteArray str);
-    void on_pushButton_copyTable_clicked();
     void on_pushButton_clearTable_clicked();
     void on_pushButtonSetPower_clicked();
 };

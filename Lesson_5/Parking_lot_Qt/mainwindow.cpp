@@ -66,33 +66,96 @@ void MainWindow::changeEvent(QEvent *e) {
     }
 }
 
+//Once this button is pressed, device connected to the PC could be opened and data could be seen
 void MainWindow::on_pushButton_open_clicked() {
+
+    port.setQueryMode(QextSerialPort::EventDriven);
+    //Port name has to be compatible with linux convention
+    port.setPortName("/dev/" + ui->comboBox_Interface->currentText());
+    port.setBaudRate(BAUD115200);
+    port.setFlowControl(FLOW_OFF);
+    port.setParity(PAR_NONE);
+    port.setDataBits(DATA_8);
+    port.setStopBits(STOP_1);
+    port.open(QIODevice::ReadWrite);
+
+    if (!port.isOpen())
+    {
+        error.setText("Open port unsuccessful, try again!");
+        error.show();
+        return;
+    }
+
+    //Initialize UART connection
     QString portname = "/dev/";
     portname.append(ui->comboBox_Interface->currentText());
     uart->open(portname);
     if (!uart->isOpen())
     {
-        error.setText("Unable to open port!");
+        error.setText("Open UART port unsuccessful, try again!");
         error.show();
         return;
     }
 
+    //Once data is sensed, trigger mainwindow receive function and read serial data
+    QObject::connect(&port, SIGNAL(readyRead()), this, SLOT(receive()));
 
-    ui->pushButton_close->setEnabled(true);
-    ui->pushButton_open->setEnabled(false);
-    ui->comboBox_Interface->setEnabled(false);
+    ui->pushButton_close->setEnabled(true);         //Enable close button
+    ui->pushButton_open->setEnabled(false);         //Disable open button
+    ui->comboBox_Interface->setEnabled(false);      //Disable dropdown interfaces
 }
 
 void MainWindow::on_pushButton_close_clicked() {
+    if (port.isOpen()) port.close();
     if (uart->isOpen()) uart->close();
     ui->pushButton_close->setEnabled(false);
     ui->pushButton_open->setEnabled(true);
     ui->comboBox_Interface->setEnabled(true);
 }
 
+//Message example: Node: 1 SensorType: 1 Value: 12
 void MainWindow::receive(QString str) {
-    ui->textEdit_Status->append(str);
-    ui->textEdit_Status->ensureCursorVisible();
+    // ui->textEdit_Status->append(str);
+    // ui->textEdit_Status->ensureCursorVisible();
+
+    static QString str;
+    char ch;
+    while (port.getChar(&ch)){
+        str.append(ch);
+
+        //Detect end of line and decode from here
+        if (ch == '\n'){
+            str.remove("\n", Qt::CaseSensitive);
+            ui->textEdit_Status->append(str);
+            ui->textEdit_Status->ensureCursorVisible();
+
+            if(str.contains("SensorType:")){
+                QStringList list = str.split(QRegExp("\\s"));
+                qDebug() << "Received from Serial Link: " << str;
+
+                //Deals with different type of sensors
+                if(!list.isEmpty()){
+                    int i = 0;
+                    int sensorType = list.at(i+3).toInt();
+                    int nodeID = list.at(i+1).toInt();
+                    double value = list.at(i+5).toInt();
+                    // qDebug() << "List size " << list.size();
+                    // qDebug() << "List value "<< i <<" "<< list.at(i);
+                    switch(sensorType){
+                        case 1:
+                            nodeStates[nodeID].light = value;
+                            ui->value_light->display(value);
+                            break;
+                        case 2:
+                            nodeStates[nodeID].distance = value;
+                            ui->value_distance->display(value);
+                            break;
+                    }
+                        evaluateParkingStatus(nodeID);
+                }
+            }
+        }
+    }
 }
 
 void MainWindow::send(QByteArray data) {
@@ -144,28 +207,10 @@ void MainWindow::on_pushButton_stop_clicked() {
     }
 }
 
-// void MainWindow::on_pushButton_copyTable_clicked() {
-//     int rows = ui->tableWidget->rowCount();
-//     int cols = ui->tableWidget->columnCount();
-//     QString selected_text;
-
-//     for (int row = 0; row < rows; row++) {
-//         for (int col = 0; col < cols; col++) {
-//             if (ui->tableWidget->item(row, col)) {
-//                 selected_text.append(ui->tableWidget->item(row, col)->text());
-//                 //qDebug() << row << ", " << col << ": " << ui->tableWidget->item(row, col)->text();
-//             }
-//             selected_text.append('\t');
-//         }
-//         selected_text.append('\n');
-//     }
-
-//     QApplication::clipboard()->setText(selected_text);
-// }
-
-// void MainWindow::on_pushButton_clearTable_clicked() {
-//     ui->tableWidget->setRowCount(0);
-// }
+//Copytable function deleted
+void MainWindow::on_pushButton_clearTable_clicked() {
+    ui->tableWidget->setRowCount(0);
+}
 
 void MainWindow::on_pushButtonSetPower_clicked()
 {
@@ -174,4 +219,26 @@ void MainWindow::on_pushButtonSetPower_clicked()
     data[4] = SERIAL_PACKET_TYPE_CONFIGURE_TEST;
     data[5] = (signed char) ui->spinBoxPower->value();
     this->send(data);
+}
+
+//Function to evaluate parking lot status
+void MainWindow::evaluateParkingStatus(int nodeID)
+{
+    const auto &state = nodeStates[nodeID];
+
+    if (state.light >= 0 && state.distance >= 0) {
+        if (state.light < 20 && state.distance < 30) {
+            QPixmap image(":images/occupied.jpg");
+            pop_up.setText("Node %1: OCCUPIED").arg(nodeID);
+            pop_up.setIconPixmap(image);
+            pop_up.show();
+            ui->textEdit_Status->append(QString("Node %1: Car detected - spot occupied").arg(nodeID));
+        } else {
+            QPixmap image(":images/empty.jpg");
+            pop_up.setText("Node %1: EMPTY").arg(nodeID);
+            pop_up.setIconPixmap(image);
+            pop_up.show();
+            ui->textEdit_Status->append(QString("Node %1: No car - spot available").arg(nodeID));
+        }
+    }
 }

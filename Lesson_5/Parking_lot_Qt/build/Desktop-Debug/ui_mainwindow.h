@@ -41,7 +41,6 @@ public:
     QPushButton *pushButton_start;
     QPushButton *pushButton_stop;
     QDoubleSpinBox *doubleSpinBox_distance;
-    QPushButton *pushButton_copyTable;
     QPushButton *pushButton_clearTable;
     QLabel *label_3;
     QPushButton *pushButtonSetPower;
@@ -100,12 +99,9 @@ public:
         doubleSpinBox_distance = new QDoubleSpinBox(centralWidget);
         doubleSpinBox_distance->setObjectName(QString::fromUtf8("doubleSpinBox_distance"));
         doubleSpinBox_distance->setGeometry(QRect(80, 40, 81, 27));
-        pushButton_copyTable = new QPushButton(centralWidget);
-        pushButton_copyTable->setObjectName(QString::fromUtf8("pushButton_copyTable"));
-        pushButton_copyTable->setGeometry(QRect(370, 40, 97, 27));
         pushButton_clearTable = new QPushButton(centralWidget);
         pushButton_clearTable->setObjectName(QString::fromUtf8("pushButton_clearTable"));
-        pushButton_clearTable->setGeometry(QRect(470, 40, 97, 27));
+        pushButton_clearTable->setGeometry(QRect(550, 40, 97, 27));
         label_3 = new QLabel(centralWidget);
         label_3->setObjectName(QString::fromUtf8("label_3"));
         label_3->setGeometry(QRect(550, 0, 51, 27));
@@ -120,7 +116,7 @@ public:
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 838, 22));
+        menuBar->setGeometry(QRect(0, 0, 838, 23));
         MainWindow->setMenuBar(menuBar);
         mainToolBar = new QToolBar(MainWindow);
         mainToolBar->setObjectName(QString::fromUtf8("mainToolBar"));
@@ -151,7 +147,6 @@ public:
         label_2->setText(QCoreApplication::translate("MainWindow", "Distance:", nullptr));
         pushButton_start->setText(QCoreApplication::translate("MainWindow", "Start", nullptr));
         pushButton_stop->setText(QCoreApplication::translate("MainWindow", "Pause", nullptr));
-        pushButton_copyTable->setText(QCoreApplication::translate("MainWindow", "Copy table", nullptr));
         pushButton_clearTable->setText(QCoreApplication::translate("MainWindow", "Clear table", nullptr));
         label_3->setText(QCoreApplication::translate("MainWindow", "Power:", nullptr));
         pushButtonSetPower->setText(QCoreApplication::translate("MainWindow", "Set", nullptr));
