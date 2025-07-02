@@ -24,6 +24,9 @@
 #include <QMessageBox>
 #include <QPixmap>
 
+//Enable time display when message received
+#include <QDateTime>
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
 
     // m_record = false;
@@ -115,9 +118,6 @@ void MainWindow::on_pushButton_close_clicked() {
 
 //Message example: Node: 1 SensorType: 1 Value: 12
 void MainWindow::receive(QString str) {
-    // ui->textEdit_Status->append(str);
-    // ui->textEdit_Status->ensureCursorVisible();
-
     static QString str;
     char ch;
     while (port.getChar(&ch)){
@@ -126,12 +126,19 @@ void MainWindow::receive(QString str) {
         //Detect end of line and decode from here
         if (ch == '\n'){
             str.remove("\n", Qt::CaseSensitive);
-            ui->textEdit_Status->append(str);
-            ui->textEdit_Status->ensureCursorVisible();
+
+            // Prepend current time to the incoming message string
+            QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss");
+            QString logLine = timestamp + " | " + str;
+
+            // Append the time-stamped message to the QTextEdit for status display
+            ui->textEdit_Status->append(logLine);
+            ui->textEdit_Status->ensureCursorVisible();  // Auto-scroll to the latest line
 
             if(str.contains("SensorType:")){
                 QStringList list = str.split(QRegExp("\\s"));
-                qDebug() << "Received from Serial Link: " << str;
+                //Display information in Qt console
+                qDebug() << "Received via Serial Link: " << str;
 
                 //Deals with different type of sensors
                 if(!list.isEmpty()){
@@ -139,19 +146,50 @@ void MainWindow::receive(QString str) {
                     int sensorType = list.at(i+3).toInt();
                     int nodeID = list.at(i+1).toInt();
                     double value = list.at(i+5).toInt();
-                    // qDebug() << "List size " << list.size();
-                    // qDebug() << "List value "<< i <<" "<< list.at(i);
+                    qDebug() << "List size " << list.size();
+                    qDebug() << "List value "<< i <<" "<< list.at(i);
                     switch(sensorType){
+                        //Light sensor
                         case 1:
                             nodeStates[nodeID].light = value;
                             ui->value_light->display(value);
+                            qDebug() << "Val light" << QString::number(value);
                             break;
+                        //Distance sensor
                         case 2:
                             nodeStates[nodeID].distance = value;
                             ui->value_distance->display(value);
+                            qDebug() << "Val distance" << QString::number(value);
                             break;
                     }
                         evaluateParkingStatus(nodeID);
+                }
+            }
+
+            //Change of network topology -- new link is added
+            //e.g. NewLink: 1 -> 2
+            else if (str.contains("NewLink:")){
+                int new_src;
+                int new_dest;
+                // Get the current scene from the GraphWidget to modify the visual graph
+                QGraphicsScene *scene = widget->scene();
+
+                //Extract node IDs from the string
+                QStringList list = str.split(QRegExp("\\s"));
+                qDebug() << "Received via Serial Link: " << str;
+                if (!list.isEmpty()) {
+                    qdebug() << "List size: " << list.size();
+                    for (int i = 0; i < list.size(); ++i) {
+                        qdebug() << "List value " << i << ": " << list.at(i);
+                        if(list.at(0) == "NewLink:") {
+                            new_src = list.at(1).toInt();
+                            new_dest = list.at(3).toInt();
+                            printf("%d\n",new_src);
+                            printf("%d\n",new_dest);
+                            qDebug() << "Link between nodes: " << node1 << " and " << node2;
+                            widget->addEdge(node1, node2);
+                        }
+                    } 
                 }
             }
         }
@@ -162,6 +200,8 @@ void MainWindow::send(QByteArray data) {
     uart->send(data);
 }
 
+//Not yet edited!!!!!
+//--------------------------------------------------------------------
 void MainWindow::packet_received(QByteArray str) {
     if (str.length() == 0) return;
 
