@@ -40,7 +40,7 @@ struct rt_report_packet {
 //the packet used for intial the set-up process
 struct hello_packet {
   uint8_t type;
-  linkaddr_t originator;         // original sender (Master node)
+  linkaddr_t src_master;                 // original sender (Master node)
   uint8_t hop_count;             // current hop count from master
   uint16_t seq_id;               // sequence ID to prevent loops
 };

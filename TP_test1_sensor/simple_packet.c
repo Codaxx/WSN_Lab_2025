@@ -17,6 +17,7 @@
 
 // used for recording the packet seq, prevent loop
 static uint16_t last_seq_id = 0;
+static linkaddr_t addr_master;
 int8_t adjacency_matrix[MAX_NODES][MAX_NODES];  
 static linkaddr_t node_index_to_addr[MAX_NODES]; 
 static int num_known_nodes = 0;
@@ -28,6 +29,8 @@ MEMB(rt_mem,rt_entry,MAX_NODES);
 uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
   return ((uint16_t)addr->u8[LINKADDR_SIZE - 2] << 8) | addr->u8[LINKADDR_SIZE - 1];
 }
+
+
 void print_adjacency_matrix()
 {
   printf("Adjacency Matrix:\n   ");
@@ -64,6 +67,16 @@ int get_index_from_addr(const linkaddr_t *addr)
   }
   // 超出最大节点数量
   return -1;
+}
+
+const linkaddr_t *get_next_hop_to(const linkaddr_t *dest)
+{
+  for (rt_entry *e = list_head(local_rt_table); e != NULL; e = e->next) {
+    if (linkaddr_cmp(&e->dest, dest)) {
+      return &e->next_hop;
+    }
+  }
+  return NULL;  // 找不到路径
 }
 
 
@@ -126,7 +139,7 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi)
     pkt.table[pkt.no_entries].seq_no  = iter->seq_no;
     pkt.no_entries++;
   }
-
+  LOG_INFO("I have sent RT_REPORT_PACKET\n");
   // unicast to the parent node
   nullnet_buf = (uint8_t *)&pkt;
   //nullnet_len = sizeof(pkt);
@@ -144,27 +157,27 @@ static void HELLO_PACKET_callback(const void *data, uint16_t len,
   leds_single_on(LEDS_LED2);
   // processing the hello packet info
   struct hello_packet *pkt = (struct hello_packet *)data;
-  int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
-  // Avoid loops: if already seen, drop
+  linkaddr_copy(&addr_master, &pkt->src_master);
 
+  // Avoid loops: if already seen, drop
   if((pkt->seq_id <= last_seq_id) && !parent_is_in_rt_table(src)){
     leds_single_off(LEDS_LED2);
     //LOG_INFO("The Packet has been Processed\r\n");
     return;
   }
 
+  int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
   // Update sequence tracking
   last_seq_id = pkt->seq_id;
   // Increment hop count
   pkt->hop_count++;
-  // to do inint node_info and ip_table
   // initialization ip_table, and add flooding info
-  // update_local_rt_table;
+  // update_local_rt_table(master_node info + hello packet info);
+  // flooding connectivity
   rt_entry *e = memb_alloc(&rt_mem);
   if(e != NULL) {
     linkaddr_copy(&e->dest, src);
     linkaddr_copy(&e->next_hop, src);
-
     e->tot_hop = pkt->hop_count;
     e->metric = rssi;
     e->seq_no = pkt->seq_id;
@@ -174,6 +187,20 @@ static void HELLO_PACKET_callback(const void *data, uint16_t len,
     //     src_rt,next_rt,e->tot_hop,e->metric,e->seq_no);
     list_add(local_rt_table, e);  
   }
+  // master node
+  if (!linkaddr_cmp(src, &pkt->src_master))
+  {
+    rt_entry *e = memb_alloc(&rt_mem);
+    if(e != NULL) {
+      linkaddr_copy(&e->dest, &pkt->src_master);
+      linkaddr_copy(&e->next_hop, src);
+      e->tot_hop = pkt->hop_count;
+      e->metric = rssi;
+      e->seq_no = pkt->seq_id;
+      list_add(local_rt_table, e);  
+    }
+  }
+
   // print the local_rt_table
   LOG_INFO("Local routing tabel is listed as follw: \r\n");
   print_local_routing_table();
@@ -189,44 +216,63 @@ static void RT_REPORT_PACKET_callback(const void *data, uint16_t len,
                            const linkaddr_t *src, const linkaddr_t *dest)
 {
   leds_single_on(LEDS_LED2);
-
+  LOG_INFO("Receiving RT_REPORT_PACEKT:\n");
   const struct rt_report_packet *pkt = (const struct rt_report_packet *)data;
-  int src_index = get_index_from_addr(&pkt->src);
-  if (src_index == -1) 
-  { 
-    LOG_WARN("Can't find the correct idx\n");
-    return;
+  if(node_id == MASTER_NODE_ID)
+  {  
+    LOG_INFO("Master Node get RT_REPORT_PACKET:\n");
+    int src_index = get_index_from_addr(&pkt->src);
+    if (src_index == -1) 
+    { 
+      LOG_WARN("Can't find the correct idx\n");
+      return;
+    }
+
+    // update the adjacency matrix
+    for (int i = 0; i < pkt->no_entries; i++) {
+    const rt_entry *e = &pkt->table[i];
+    int dst_index = get_index_from_addr(&e->dest);
+    if (dst_index == -1) continue;
+    adjacency_matrix[src_index][dst_index] = e->metric;
+    }
+    // update local_rt_table, now just simple adding the new entry
+    for (int i = 0; i < pkt->no_entries; i++) {
+      rt_entry *new_entry = memb_alloc(&rt_mem);
+      const rt_entry *recv_entry = &pkt->table[i];
+      if (new_entry != NULL) {
+        new_entry->type = recv_entry->type;
+        linkaddr_copy(&new_entry->dest,     &recv_entry->dest);
+        linkaddr_copy(&new_entry->next_hop, &recv_entry->next_hop);
+        new_entry->tot_hop = recv_entry->tot_hop;
+        new_entry->metric  = recv_entry->metric;
+        new_entry->seq_no  = recv_entry->seq_no;
+        list_add(local_rt_table, new_entry);
+      } 
+      else {
+        LOG_WARN("RT table full: could not add entry %d\n", i);
+      }
+    }
+    LOG_INFO("Updated local routing table:\n");
+    print_local_routing_table();
+    print_adjacency_matrix();
+    leds_single_off(LEDS_LED2);
+  }
+  else
+  {
+    LOG_INFO("Not the Master Node forwarding RT_REPORT_PACKET:\n");
+
+    
+    const linkaddr_t *dest = get_next_hop_to(&addr_master);
+    nullnet_buf = (uint8_t *)&pkt;
+    //nullnet_len = sizeof(pkt);
+    nullnet_len = offsetof(struct rt_report_packet, table) + pkt->no_entries * sizeof(rt_entry);
+
+    NETSTACK_NETWORK.output(dest); 
   }
 
-  // update the adjacency matrix
-  for (int i = 0; i < pkt->no_entries; i++) {
-  const rt_entry *e = &pkt->table[i];
-  int dst_index = get_index_from_addr(&e->dest);
-  if (dst_index == -1) continue;
-  adjacency_matrix[src_index][dst_index] = e->metric;
-  }
-  // update local_rt_table, now just simple adding the new entry
-  for (int i = 0; i < pkt->no_entries; i++) {
-    rt_entry *new_entry = memb_alloc(&rt_mem);
-    const rt_entry *recv_entry = &pkt->table[i];
-    if (new_entry != NULL) {
-      new_entry->type = recv_entry->type;
-      linkaddr_copy(&new_entry->dest,     &recv_entry->dest);
-      linkaddr_copy(&new_entry->next_hop, &recv_entry->next_hop);
-      new_entry->tot_hop = recv_entry->tot_hop;
-      new_entry->metric  = recv_entry->metric;
-      new_entry->seq_no  = recv_entry->seq_no;
-      list_add(local_rt_table, new_entry);
-    } 
-    else {
-      LOG_WARN("RT table full: could not add entry %d\n", i);
-    }
-  }
-  LOG_INFO("Updated local routing table:\n");
-  print_local_routing_table();
-  print_adjacency_matrix();
-  leds_single_off(LEDS_LED2);
+
 }
+
  
 static void HELLO_Callback(const void *data, uint16_t len,
                            const linkaddr_t *src, const linkaddr_t *dest)
@@ -263,7 +309,7 @@ PROCESS_THREAD(hello_process, ev, data) {
   //initiation the adjacency_matrix
   for (int i = 0; i < MAX_NODES; i++)
   for (int j = 0; j < MAX_NODES; j++)
-    adjacency_matrix[i][j] = -1;  // -1 表示未连通
+    adjacency_matrix[i][j] = -1;  
 
 
   memb_init(&rt_mem);
@@ -280,7 +326,7 @@ PROCESS_THREAD(hello_process, ev, data) {
       PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
       leds_single_on(LEDS_LED1);
       my_hello_pkt.type = HELLO_PACKET;
-      linkaddr_copy(&my_hello_pkt.originator, &linkaddr_node_addr);
+      linkaddr_copy(&my_hello_pkt.src_master, &linkaddr_node_addr);
       my_hello_pkt.hop_count = 0;
       my_hello_pkt.seq_id = HELLO_SEQ_ID;
       forward_hello(&my_hello_pkt);
@@ -290,7 +336,7 @@ PROCESS_THREAD(hello_process, ev, data) {
     }
   }
   else{
-  
+    
   }
   PROCESS_END();
 }
