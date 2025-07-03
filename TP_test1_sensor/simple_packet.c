@@ -17,6 +17,10 @@
 
 // used for recording the packet seq, prevent loop
 static uint16_t last_seq_id = 0;
+int8_t adjacency_matrix[MAX_NODES][MAX_NODES];  // -1 表示无连接
+static linkaddr_t node_index_to_addr[MAX_NODES]; // index → addr
+static int num_known_nodes = 0;
+
 LIST(local_rt_table);
 MEMB(rt_mem,rt_entry,MAX_NODES);
 
@@ -30,7 +34,57 @@ MEMB(rt_mem,rt_entry,MAX_NODES);
 uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
   return ((uint16_t)addr->u8[LINKADDR_SIZE - 2] << 8) | addr->u8[LINKADDR_SIZE - 1];
 }
+void print_adjacency_matrix()
+{
+  printf("Adjacency Matrix:\n   ");
+  for (int j = 0; j < num_known_nodes; j++) {
+    printf("%02x%02x ", node_index_to_addr[j].u8[0], node_index_to_addr[j].u8[1]);
+  }
+  printf("\n");
 
+  for (int i = 0; i < num_known_nodes; i++) {
+    printf("%02x%02x ", node_index_to_addr[i].u8[0], node_index_to_addr[i].u8[1]);
+    for (int j = 0; j < num_known_nodes; j++) {
+      if (adjacency_matrix[i][j] == -1)
+        printf("  -  ");
+      else
+        printf("%3d  ", adjacency_matrix[i][j]);
+    }
+    printf("\n");
+  }
+}
+
+
+int get_index_from_addr(const linkaddr_t *addr)
+{
+  for (int i = 0; i < num_known_nodes; i++) {
+    if (linkaddr_cmp(addr, &node_index_to_addr[i])) {
+      return i;
+    }
+  }
+  // 不存在，尝试添加
+  if (num_known_nodes < MAX_NODES) {
+    linkaddr_copy(&node_index_to_addr[num_known_nodes], addr);
+    return num_known_nodes++;
+  }
+  // 超出最大节点数量
+  return -1;
+}
+
+
+void print_local_routing_table() {
+  LOG_INFO("+------+ Local Routing Table: +------+\n");
+  int i = 0;
+  for(rt_entry *e = list_head(local_rt_table); e != NULL; e = e->next) {
+    uint16_t dest_id = get_node_id_from_linkaddr(&e->dest);
+    uint16_t next_id = get_node_id_from_linkaddr(&e->next_hop);
+    LOG_INFO("|No.%d | dest:%u | next:%u | tot_hop:%u | rssi:%d | seq:%u |\n",
+            i++, dest_id, next_id,
+            e->tot_hop, e->metric, e->seq_no);
+  }
+  LOG_INFO("+------+----------------------+------+\n");
+}
+  
 // Forward packet via broadcast
 void forward_hello(struct hello_packet *pkt)
 {
@@ -44,28 +98,46 @@ void update_local_rt_table(struct hello_packet *pkt)
 
 }
 
-
-// Reply to hello packet
-static void reply_to_hello(const linkaddr_t *dest, uint8_t hop, int8_t rssi)
+bool parent_is_in_rt_table(const linkaddr_t *src)
 {
-  struct node_reply_packet pkt;
-  pkt.type = RE_HELLO_PACKET;
-  linkaddr_copy(&pkt.node_addr, &linkaddr_node_addr);
-  pkt.hop_count = hop;
-  uint16_t dst_node_id = get_node_id_from_linkaddr(dest);
-  LOG_INFO("REPLY to id %i | my id:%i | hop=%d | rssi=%d\n",
-       dst_node_id,
-       node_id,
-       hop, rssi);
-  nullnet_buf = (uint8_t *)&pkt;
-  nullnet_len = sizeof(pkt);
-  NETSTACK_NETWORK.output(dest); 
+  rt_entry *iter = list_head(local_rt_table);
+  for(; iter != NULL; iter = iter->next) {
+    if(linkaddr_cmp(&iter->dest, src))
+    {
+      return 1;
+    }
+    else;
+  }
+  return 0;
 }
 
+// Reply to hello packet
+static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi)
+{
+  // adding the local routing table info to the packet
+  static struct rt_report_packet pkt;
+  pkt.type = RT_REPORT_PACKET;
+  linkaddr_copy(&pkt.src,&linkaddr_node_addr);
+  //writing the local routing table to the packet
+  pkt.no_entries = 0;
+  rt_entry *iter = list_head(local_rt_table);
+  for(; iter != NULL; iter = iter->next) {
+    //pkt.table[no_entries++]=iter;
+    pkt.table[pkt.no_entries].type     = iter->type;
+    linkaddr_copy(&pkt.table[pkt.no_entries].dest,     &iter->dest);
+    linkaddr_copy(&pkt.table[pkt.no_entries].next_hop, &iter->next_hop);
+    pkt.table[pkt.no_entries].tot_hop = iter->tot_hop;
+    pkt.table[pkt.no_entries].metric  = iter->metric;
+    pkt.table[pkt.no_entries].seq_no  = iter->seq_no;
+    pkt.no_entries++;
+  }
 
-
-
-
+  // unicast to the parent node
+  nullnet_buf = (uint8_t *)&pkt;
+  //nullnet_len = sizeof(pkt);
+  nullnet_len = offsetof(struct rt_report_packet, table) + pkt.no_entries * sizeof(rt_entry);
+  NETSTACK_NETWORK.output(dest); 
+}
 
 // Receive hello packet callback
 // 1.forward hello packet
@@ -73,35 +145,27 @@ static void reply_to_hello(const linkaddr_t *dest, uint8_t hop, int8_t rssi)
 static void HELLO_PACKET_callback(const void *data, uint16_t len,
                            const linkaddr_t *src, const linkaddr_t *dest)
 {
-  LOG_INFO("Hello Packet Process begin\n");
+  //LOG_INFO("Hello Packet Process begin\r\n");
   leds_single_on(LEDS_LED2);
-  if(len != sizeof(struct hello_packet)) {
-    LOG_WARN("Invalid packet size %u\n", len);
-    leds_single_off(LEDS_LED2);
-    return;
-  }
   // processing the hello packet info
   struct hello_packet *pkt = (struct hello_packet *)data;
   int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
-  uint16_t src_node_id = get_node_id_from_linkaddr(src);
-  
   // Avoid loops: if already seen, drop
-  //if(pkt->seq_id <= last_seq_id) {
-  //  leds_single_off(LEDS_LED2);
-  //  LOG_INFO("The Packet has been Processed");
-  //  return;
-  //}
-  LOG_INFO("last_seq_id: %u, pkt seq_id:%u\n",last_seq_id,pkt->seq_id);
-  LOG_INFO("HELLO from node id %i | seq %u | hop %u | rssi%i\n",
-         src_node_id,
-         pkt->seq_id, pkt->hop_count, rssi);
+
+  if((pkt->seq_id <= last_seq_id) && !parent_is_in_rt_table(src)){
+    leds_single_off(LEDS_LED2);
+    //LOG_INFO("The Packet has been Processed\r\n");
+    //for debug
+    //return;
+  }
+
   // Update sequence tracking
   last_seq_id = pkt->seq_id;
   // Increment hop count
   pkt->hop_count++;
   // to do inint node_info and ip_table
   // initialization ip_table, and add flooding info
-  //update_local_rt_table(pkt);
+  // update_local_rt_table;
   rt_entry *e = memb_alloc(&rt_mem);
   if(e != NULL) {
     linkaddr_copy(&e->dest, src);
@@ -110,47 +174,79 @@ static void HELLO_PACKET_callback(const void *data, uint16_t len,
     e->tot_hop = pkt->hop_count;
     e->metric = rssi;
     e->seq_no = pkt->seq_id;
-    uint16_t src_rt = get_node_id_from_linkaddr(&e->dest);
-    uint16_t next_rt = get_node_id_from_linkaddr(&e->next_hop);
-    LOG_INFO("Routing entry dest %i | next hop%i| tol_hop %u | rssi %i | seq_id %u\n",
-         src_rt,next_rt,e->tot_hop,e->metric,e->seq_no);
+    //uint16_t src_rt = get_node_id_from_linkaddr(&e->dest);
+    //uint16_t next_rt = get_node_id_from_linkaddr(&e->next_hop);
+    //LOG_INFO("Routing entry dest %i | next hop%i| tol_hop %u | rssi %i | seq_id %u\r\n",
+    //     src_rt,next_rt,e->tot_hop,e->metric,e->seq_no);
     list_add(local_rt_table, e);  
   }
-  rt_entry *iter = list_head(local_rt_table);
-  uint16_t temp_id =get_node_id_from_linkaddr(&iter->dest);
-  for(; iter != NULL; iter = iter->next) {
-    LOG_INFO("Entry: dest=%u, hop=%u\n", temp_id, iter->tot_hop);
-  }
-
+  // print the local_rt_table
+  LOG_INFO("Local routing tabel is listed as follw: \r\n");
+  print_local_routing_table();
   // Forward the packet
   forward_hello(pkt);
   // Reply the source
-  reply_to_hello(&pkt->originator, pkt->hop_count, rssi);
+  routing_report(src, pkt->hop_count, rssi);
 
   leds_single_off(LEDS_LED2);
 }
 
-static void RE_HELLO_PACKET_Callback(const void *data, uint16_t len,
+static void RT_REPORT_PACKET_callback(const void *data, uint16_t len,
                            const linkaddr_t *src, const linkaddr_t *dest)
 {
-  struct node_reply_packet *pkt = packetbuf_dataptr();
-  if(pkt->type == RE_HELLO_PACKET) {
-    LOG_INFO("REPLY from id %i | hop=%d" ,
-           node_id,
-           pkt->hop_count);
+  leds_single_on(LEDS_LED2);
+  LOG_INFO("RT_REPORT_PACKET_callback\n");
+  const struct rt_report_packet *pkt = (const struct rt_report_packet *)data;
+
+  int src_index = get_index_from_addr(&pkt->src);
+  if (src_index == -1) 
+  { 
+    LOG_WARN("Can't find the correct idx\n");
+    return;
   }
+
+  for (int i = 0; i < pkt->no_entries; i++) {
+  const rt_entry *e = &pkt->table[i];
+  int dst_index = get_index_from_addr(&e->dest);
+  if (dst_index == -1) continue;
+  adjacency_matrix[src_index][dst_index] = e->tot_hop;
+  LOG_INFO("→ link: %d (%02x:%02x) → %d (%02x:%02x), hop = %d\n",
+           src_index, pkt->src.u8[0], pkt->src.u8[1],
+           dst_index, e->dest.u8[0], e->dest.u8[1],
+           e->tot_hop);
+  }
+
+
+
+  for (int i = 0; i < pkt->no_entries; i++) {
+    rt_entry *new_entry = memb_alloc(&rt_mem);
+    const rt_entry *recv_entry = &pkt->table[i];
+    if (new_entry != NULL) {
+      new_entry->type = recv_entry->type;
+      linkaddr_copy(&new_entry->dest,     &recv_entry->dest);
+      linkaddr_copy(&new_entry->next_hop, &recv_entry->next_hop);
+      new_entry->tot_hop = recv_entry->tot_hop;
+      new_entry->metric  = recv_entry->metric;
+      new_entry->seq_no  = recv_entry->seq_no;
+
+      list_add(local_rt_table, new_entry);
+    } 
+    else {
+      LOG_WARN("RT table full: could not add entry %d\n", i);
+    }
+  }
+  LOG_INFO("Updated local routing table:\n");
+  print_local_routing_table();
+  print_adjacency_matrix();
+  leds_single_off(LEDS_LED2);
 }
+ 
 static void HELLO_Callback(const void *data, uint16_t len,
                            const linkaddr_t *src, const linkaddr_t *dest)
 {
   leds_single_on(LEDS_LED2);
   uint8_t type = *((uint8_t *)data);
-  if(len < 1) 
-  {
-    LOG_WARN("Unknown packet type: %d\n", type); 
-    leds_single_off(LEDS_LED2);
-    return;
-  }
+  LOG_INFO("<< Received packet, type = %d, len = %d\n", type, len);
   
 
   switch(type) {
@@ -158,12 +254,12 @@ static void HELLO_Callback(const void *data, uint16_t len,
       HELLO_PACKET_callback(data, len, src, dest);
       leds_single_off(LEDS_LED2);
       break;
-    case RE_HELLO_PACKET:
-      RE_HELLO_PACKET_Callback(data, len, src, dest);
+    case RT_REPORT_PACKET:
+      RT_REPORT_PACKET_callback(data, len, src, dest);
       leds_single_off(LEDS_LED2);
       break;
     default:
-      LOG_WARN("Unknown packet type: %d\n", type);
+      LOG_WARN("Unknown packet type: %d\r\n", type);
       //printf("Unknown packet type: %d\n", type);
   }
 }
@@ -175,7 +271,14 @@ PROCESS_THREAD(hello_process, ev, data) {
   NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,GROUP_CHANNEL);
   radio_value_t channel;
   NETSTACK_CONF_RADIO.get_value(RADIO_PARAM_CHANNEL, &channel);
-  LOG_INFO("Radio channel set to %u\n", channel);
+  LOG_INFO("Radio channel set to %u\r\n", channel);
+
+  //initiation the adjacency_matrix
+  for (int i = 0; i < MAX_NODES; i++)
+  for (int j = 0; j < MAX_NODES; j++)
+    adjacency_matrix[i][j] = -1;  // -1 表示未连通
+
+
   memb_init(&rt_mem);
   list_init(local_rt_table);
   nullnet_set_input_callback(HELLO_Callback);
@@ -186,6 +289,7 @@ PROCESS_THREAD(hello_process, ev, data) {
     // periodically send hello packet
     etimer_set(&timer, CLOCK_SECOND * HELLO_INTERVAL);
     while(1) {
+      last_seq_id = HELLO_SEQ_ID;
       PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
       leds_single_on(LEDS_LED1);
       my_hello_pkt.type = HELLO_PACKET;
@@ -193,7 +297,7 @@ PROCESS_THREAD(hello_process, ev, data) {
       my_hello_pkt.hop_count = 0;
       my_hello_pkt.seq_id = HELLO_SEQ_ID;
       forward_hello(&my_hello_pkt);
-      LOG_INFO("MASTER broadcasted HELLO\n");
+      LOG_INFO("MASTER broadcasted HELLO\r\n");
       leds_single_off(LEDS_LED1);
       etimer_reset(&timer);
     }

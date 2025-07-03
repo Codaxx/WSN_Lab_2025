@@ -39,7 +39,7 @@
 
 
 /* ==== UNICAST MESSAGE TYPES  ====*/
-#define RE_HELLO_PACKET 2
+#define RT_REPORT_PACKET 2
 
 
 
