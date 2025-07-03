@@ -17,20 +17,14 @@
 
 // used for recording the packet seq, prevent loop
 static uint16_t last_seq_id = 0;
-int8_t adjacency_matrix[MAX_NODES][MAX_NODES];  // -1 表示无连接
-static linkaddr_t node_index_to_addr[MAX_NODES]; // index → addr
+int8_t adjacency_matrix[MAX_NODES][MAX_NODES];  
+static linkaddr_t node_index_to_addr[MAX_NODES]; 
 static int num_known_nodes = 0;
 
 LIST(local_rt_table);
 MEMB(rt_mem,rt_entry,MAX_NODES);
 
 
-/**
- * @brief Convert a link-layer address (linkaddr_t) into a 16-bit node ID.
- *
- * @param addr Pointer to a linkaddr_t structure (e.g., from packet source)
- * @return uint16_t The corresponding node ID
- */
 uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
   return ((uint16_t)addr->u8[LINKADDR_SIZE - 2] << 8) | addr->u8[LINKADDR_SIZE - 1];
 }
@@ -156,8 +150,7 @@ static void HELLO_PACKET_callback(const void *data, uint16_t len,
   if((pkt->seq_id <= last_seq_id) && !parent_is_in_rt_table(src)){
     leds_single_off(LEDS_LED2);
     //LOG_INFO("The Packet has been Processed\r\n");
-    //for debug
-    //return;
+    return;
   }
 
   // Update sequence tracking
@@ -196,9 +189,8 @@ static void RT_REPORT_PACKET_callback(const void *data, uint16_t len,
                            const linkaddr_t *src, const linkaddr_t *dest)
 {
   leds_single_on(LEDS_LED2);
-  LOG_INFO("RT_REPORT_PACKET_callback\n");
-  const struct rt_report_packet *pkt = (const struct rt_report_packet *)data;
 
+  const struct rt_report_packet *pkt = (const struct rt_report_packet *)data;
   int src_index = get_index_from_addr(&pkt->src);
   if (src_index == -1) 
   { 
@@ -206,19 +198,14 @@ static void RT_REPORT_PACKET_callback(const void *data, uint16_t len,
     return;
   }
 
+  // update the adjacency matrix
   for (int i = 0; i < pkt->no_entries; i++) {
   const rt_entry *e = &pkt->table[i];
   int dst_index = get_index_from_addr(&e->dest);
   if (dst_index == -1) continue;
-  adjacency_matrix[src_index][dst_index] = e->tot_hop;
-  LOG_INFO("→ link: %d (%02x:%02x) → %d (%02x:%02x), hop = %d\n",
-           src_index, pkt->src.u8[0], pkt->src.u8[1],
-           dst_index, e->dest.u8[0], e->dest.u8[1],
-           e->tot_hop);
+  adjacency_matrix[src_index][dst_index] = e->metric;
   }
-
-
-
+  // update local_rt_table, now just simple adding the new entry
   for (int i = 0; i < pkt->no_entries; i++) {
     rt_entry *new_entry = memb_alloc(&rt_mem);
     const rt_entry *recv_entry = &pkt->table[i];
@@ -229,7 +216,6 @@ static void RT_REPORT_PACKET_callback(const void *data, uint16_t len,
       new_entry->tot_hop = recv_entry->tot_hop;
       new_entry->metric  = recv_entry->metric;
       new_entry->seq_no  = recv_entry->seq_no;
-
       list_add(local_rt_table, new_entry);
     } 
     else {
@@ -261,7 +247,7 @@ static void HELLO_Callback(const void *data, uint16_t len,
       break;
     default:
       LOG_WARN("Unknown packet type: %d\r\n", type);
-      //printf("Unknown packet type: %d\n", type);
+     
   }
 }
 
