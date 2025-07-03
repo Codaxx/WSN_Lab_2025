@@ -38,12 +38,13 @@ void print_adjacency_matrix()
 {
   printf("Adjacency Matrix:\n   ");
   for (int j = 0; j < num_known_nodes; j++) {
-    printf("%02x%02x ", node_index_to_addr[j].u8[0], node_index_to_addr[j].u8[1]);
+    //print as node id 
+    printf("%u     ",get_node_id_from_linkaddr(&node_index_to_addr[j]));
   }
   printf("\n");
 
   for (int i = 0; i < num_known_nodes; i++) {
-    printf("%02x%02x ", node_index_to_addr[i].u8[0], node_index_to_addr[i].u8[1]);
+    printf("%u",get_node_id_from_linkaddr(&node_index_to_addr[i]));
     for (int j = 0; j < num_known_nodes; j++) {
       if (adjacency_matrix[i][j] == -1)
         printf("  -  ");
