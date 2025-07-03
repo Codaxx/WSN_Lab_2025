@@ -29,7 +29,7 @@ typedef struct{
 	rt_entry table[MAX_NODES]; // battery status
 }node_info;
 
-struct rt_report_packet {
+struct dao_packet {
   	uint8_t type;// Standard C includes:
 	linkaddr_t src;
 	uint8_t no_entries;
@@ -38,7 +38,7 @@ struct rt_report_packet {
 
 
 //the packet used for intial the set-up process
-struct hello_packet {
+struct dio_packet {
   uint8_t type;
   linkaddr_t src_master;                 // original sender (Master node)
   uint8_t hop_count;             // current hop count from master

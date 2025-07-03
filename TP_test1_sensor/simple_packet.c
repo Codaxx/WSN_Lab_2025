@@ -30,7 +30,6 @@ uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
   return ((uint16_t)addr->u8[LINKADDR_SIZE - 2] << 8) | addr->u8[LINKADDR_SIZE - 1];
 }
 
-
 void print_adjacency_matrix()
 {
   printf("Adjacency Matrix:\n   ");
@@ -51,7 +50,6 @@ void print_adjacency_matrix()
     printf("\n");
   }
 }
-
 
 int get_index_from_addr(const linkaddr_t *addr)
 {
@@ -76,9 +74,8 @@ const linkaddr_t *get_next_hop_to(const linkaddr_t *dest)
       return &e->next_hop;
     }
   }
-  return NULL;  // 找不到路径
+  return NULL;  
 }
-
 
 void print_local_routing_table() {
   LOG_INFO("+------+ Local Routing Table: +------+\n");
@@ -92,16 +89,18 @@ void print_local_routing_table() {
   }
   LOG_INFO("+------+----------------------+------+\n");
 }
-  
+
+
+
 // Forward packet via broadcast
-void forward_hello(struct hello_packet *pkt)
+void forward_hello(struct dio_packet *pkt)
 {
   nullnet_buf = (uint8_t *)pkt;
   nullnet_len = sizeof(*pkt);
   NETSTACK_NETWORK.output(NULL);
 }
 
-void update_local_rt_table(struct hello_packet *pkt)
+void update_local_rt_table(struct dio_packet *pkt)
 {
 
 }
@@ -123,7 +122,7 @@ bool parent_is_in_rt_table(const linkaddr_t *src)
 static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi)
 {
   // adding the local routing table info to the packet
-  static struct rt_report_packet pkt;
+  static struct dao_packet pkt;
   pkt.type = RT_REPORT_PACKET;
   linkaddr_copy(&pkt.src,&linkaddr_node_addr);
   //writing the local routing table to the packet
@@ -143,20 +142,21 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi)
   // unicast to the parent node
   nullnet_buf = (uint8_t *)&pkt;
   //nullnet_len = sizeof(pkt);
-  nullnet_len = offsetof(struct rt_report_packet, table) + pkt.no_entries * sizeof(rt_entry);
+  nullnet_len = offsetof(struct dao_packet, table) + pkt.no_entries * sizeof(rt_entry);
   NETSTACK_NETWORK.output(dest); 
 }
 
 // Receive hello packet callback
 // 1.forward hello packet
 // 2.reply to the src node
-static void HELLO_PACKET_callback(const void *data, uint16_t len,
+// 3,adding the hello packet info from the rt_table
+static void DIO_PACKET_callback(const void *data, uint16_t len,
                            const linkaddr_t *src, const linkaddr_t *dest)
 {
   //LOG_INFO("Hello Packet Process begin\r\n");
   leds_single_on(LEDS_LED2);
   // processing the hello packet info
-  struct hello_packet *pkt = (struct hello_packet *)data;
+  struct dio_packet *pkt = (struct dio_packet *)data;
   linkaddr_copy(&addr_master, &pkt->src_master);
 
   // Avoid loops: if already seen, drop
@@ -212,12 +212,12 @@ static void HELLO_PACKET_callback(const void *data, uint16_t len,
   leds_single_off(LEDS_LED2);
 }
 
-static void RT_REPORT_PACKET_callback(const void *data, uint16_t len,
+static void DAO_PACKET_callback(const void *data, uint16_t len,
                            const linkaddr_t *src, const linkaddr_t *dest)
 {
   leds_single_on(LEDS_LED2);
   LOG_INFO("Receiving RT_REPORT_PACEKT:\n");
-  const struct rt_report_packet *pkt = (const struct rt_report_packet *)data;
+  const struct dao_packet *pkt = (const struct dao_packet *)data;
   if(node_id == MASTER_NODE_ID)
   {  
     LOG_INFO("Master Node get RT_REPORT_PACKET:\n");
@@ -265,7 +265,7 @@ static void RT_REPORT_PACKET_callback(const void *data, uint16_t len,
     const linkaddr_t *dest = get_next_hop_to(&addr_master);
     nullnet_buf = (uint8_t *)&pkt;
     //nullnet_len = sizeof(pkt);
-    nullnet_len = offsetof(struct rt_report_packet, table) + pkt->no_entries * sizeof(rt_entry);
+    nullnet_len = offsetof(struct dao_packet, table) + pkt->no_entries * sizeof(rt_entry);
 
     NETSTACK_NETWORK.output(dest); 
   }
@@ -284,11 +284,11 @@ static void HELLO_Callback(const void *data, uint16_t len,
 
   switch(type) {
     case HELLO_PACKET:
-      HELLO_PACKET_callback(data, len, src, dest);
+      DIO_PACKET_callback(data, len, src, dest);
       leds_single_off(LEDS_LED2);
       break;
     case RT_REPORT_PACKET:
-      RT_REPORT_PACKET_callback(data, len, src, dest);
+      DAO_PACKET_callback(data, len, src, dest);
       leds_single_off(LEDS_LED2);
       break;
     default:
@@ -317,7 +317,7 @@ PROCESS_THREAD(hello_process, ev, data) {
   nullnet_set_input_callback(HELLO_Callback);
   if(node_id == MASTER_NODE_ID) 
   {
-    static struct hello_packet my_hello_pkt;
+    static struct dio_packet my_hello_pkt;
     static struct etimer timer;
     // periodically send hello packet
     etimer_set(&timer, CLOCK_SECOND * HELLO_INTERVAL);
