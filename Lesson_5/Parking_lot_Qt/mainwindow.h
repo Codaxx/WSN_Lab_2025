@@ -84,7 +84,6 @@ private slots:
     void on_pushButton_open_clicked();
     void receive();
     void send(QByteArray data);
-    void packet_received(QByteArray str);
     void on_pushButtonSetPower_clicked();
 };
 

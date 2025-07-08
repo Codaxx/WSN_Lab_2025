@@ -48,7 +48,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //Initialize the topology graph
     widget = new GraphWidget;
-    for (int i = 0; i<8; ++i){
+    for (int i = 0; i<9; ++i){
         nodes.push_back(new Node(widget, this));
     }
     createDockWindows();
@@ -259,7 +259,7 @@ void MainWindow::createDockWindows()
     QGraphicsScene *scene = widget->scene();
 
     // Add all nodes into the graphics scene for visualization
-    for (int i = 0; i < nodes.size(); ++i) {
+    for (int i = 0; i < 9; ++i) {
         scene->addItem(nodes.at(i));
     }
 
