@@ -4,6 +4,7 @@
 // This structure is used routing table entries.
 // Total byte = 8 byte.
 typedef struct rt_entry{
+	struct rt_entry *next;
 	uint8_t type;// Standard C includes:
 	linkaddr_t dest;
 	linkaddr_t next_hop;
@@ -11,7 +12,6 @@ typedef struct rt_entry{
 	int16_t metric;
 	uint16_t seq_no;
 	// used for constructiong the local routing table
-	struct rt_entry *next;
 }rt_entry;
 
 typedef struct{
