@@ -117,7 +117,7 @@ void MainWindow::on_pushButton_close_clicked() {
 }
 
 //Message example: Node: 1 SensorType: 1 Value: 12
-void MainWindow::receive(QString str) {
+void MainWindow::receive() {
     static QString str;
     char ch;
     while (port.getChar(&ch)){
@@ -178,9 +178,9 @@ void MainWindow::receive(QString str) {
                 QStringList list = str.split(QRegExp("\\s"));
                 qDebug() << "Parsed serial input: " << str;
                 if (!list.isEmpty()) {
-                    ebug() << "List size: " << list.size();
+                    qDebug() << "List size: " << list.size();
                     for (int i = 0; i < list.size(); ++i) {
-                        qdebug() << "List value " << i << ": " << list.at(i);
+                        qDebug() << "List value " << i << ": " << list.at(i);
                         if(list.at(0) == "NewLink:") {
                             new_src = list.at(1).toInt();
                             new_dest = list.at(3).toInt();
@@ -336,28 +336,6 @@ void GraphWidget::timerEvent(QTimerEvent *event)
     }
 }
 
-void Node::calculateForces()
-{
-    if (!scene() || scene()->mouseGrabberItem() == this) {
-        newPos = pos();
-        return;
-    }
-
-    QRectF sceneRect = scene()->sceneRect();
-    newPos = pos(); 
-    newPos.setX(qMin(qMax(newPos.x(), sceneRect.left() + 10), sceneRect.right() - 10));
-    newPos.setY(qMin(qMax(newPos.y(), sceneRect.top() + 10), sceneRect.bottom() - 10));
-}
-
-bool Node::advancePosition()
-{
-    if (newPos == pos())
-        return false;
-
-    setPos(newPos);
-    return true;
-}
-
 // Custom background painting for the topology graph view
 void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
 {
@@ -379,6 +357,30 @@ void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
     painter->drawRect(sceneBounds);
 }
 
+
+//Function for handling nodes
+
+void Node::calculateForces()
+{
+    if (!scene() || scene()->mouseGrabberItem() == this) {
+        newPos = pos();
+        return;
+    }
+
+    QRectF sceneRect = scene()->sceneRect();
+    newPos = pos();
+    newPos.setX(qMin(qMax(newPos.x(), sceneRect.left() + 10), sceneRect.right() - 10));
+    newPos.setY(qMin(qMax(newPos.y(), sceneRect.top() + 10), sceneRect.bottom() - 10));
+}
+
+bool Node::advancePosition()
+{
+    if (newPos == pos())
+        return false;
+
+    setPos(newPos);
+    return true;
+}
 
 //Function to evaluate parking lot status
 void MainWindow::evaluateParkingStatus(int nodeID)

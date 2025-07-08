@@ -82,7 +82,7 @@ private slots:
 private slots:
     void on_pushButton_close_clicked();
     void on_pushButton_open_clicked();
-    void receive(QString str);
+    void receive();
     void send(QByteArray data);
     void on_pushButton_start_clicked();
     void on_pushButton_stop_clicked();
