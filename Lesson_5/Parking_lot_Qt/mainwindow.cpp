@@ -476,6 +476,120 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
     painter->drawEllipse(-10, -10, 20, 20);
 }
 
+
+// Constructor for the Edge class, initializes the edge between two nodes and sets its type
+Edge::Edge(Node *sourceNode, Node *destNode, unsigned int edgeType)
+    : source(sourceNode), dest(destNode)
+{
+    setAcceptedMouseButtons(Qt::NoButton);
+    source->addEdge(this);
+    dest->addEdge(this);
+
+    // Store the edge type (e.g., new link, lost link)
+    edge_type = edgeType;
+
+    // Compute the initial positions for rendering the edge
+    adjust();
+}
+
+Node *Edge::sourceNode() const
+{
+    return source;
+}
+
+Node *Edge::destNode() const
+{
+    return dest;
+}
+
+// Update the source and destination points of the edge for drawing
+void Edge::adjust()
+{
+    // If either node is missing, skip adjustment
+    if (!source || !dest)
+        return;
+
+    // Compute a straight line between the source and destination node positions
+    QLineF line(mapFromItem(source, 0, 0), mapFromItem(dest, 0, 0));
+    qreal length = line.length();
+
+    // Notify the graphics system that the item's shape will change
+    prepareGeometryChange();
+
+    // Offset the edge endpoints slightly away from the node centers to avoid drawing directly over the node graphics
+    if (length > qreal(20.)) {
+        QPointF edgeOffset((line.dx() * 10) / length, (line.dy() * 10) / length);
+        sourcePoint = line.p1() + edgeOffset;
+        destPoint = line.p2() - edgeOffset;
+    } else {
+        // If nodes are too close, collapse the edge to a single point
+        sourcePoint = destPoint = line.p1();
+    }
+}
+
+// Return the bounding rectangle for this edge, used by Qt to optimize redraws and event detection
+QRectF Edge::boundingRect() const
+{
+    if (!source || !dest)
+        return QRectF();
+
+    qreal penWidth = 1;
+    qreal extra = (penWidth + arrowSize) / 2.0;
+
+    // Create a rectangle that spans from the source point to the destination point
+    QRectF rawBounds(sourcePoint, QSizeF(destPoint.x() - sourcePoint.x(),
+                                     destPoint.y() - sourcePoint.y()));
+
+    return rawBounds.normalized().adjusted(-extra, -extra, extra, extra);
+}
+
+// Custom painting of the edge line and arrow head
+void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
+{
+    // If either endpoint is missing, skip drawing
+    if (!source || !dest)
+        return;
+
+    // Create a straight line from the source to the destination point
+    QLineF line(sourcePoint, destPoint);
+
+    // If the line has no length, there's nothing to draw
+    if (qFuzzyCompare(line.length(), qreal(0.)))
+        return;
+
+    // Set the pen style based on the edge type (color and line style)
+    switch (this->edge_type) {
+    case 0: painter->setPen(QPen(Qt::green, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        break;
+    case 1: painter->setPen(QPen(Qt::red, 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        break;
+    }
+
+    // Draw the main line of the edge
+    painter->drawLine(line);
+
+    // Calculate the angle of the line to orient the arrowhead correctly
+    double angle = std::atan2(-line.dy(), line.dx());
+
+    // Compute the two side points of the arrowhead triangle at the destination
+    QPointF destArrowP1 = destPoint + QPointF(sin(angle - M_PI / 3) * arrowSize,
+                                              cos(angle - M_PI / 3) * arrowSize);
+    QPointF destArrowP2 = destPoint + QPointF(sin(angle - M_PI + M_PI / 3) * arrowSize,
+                                              cos(angle - M_PI + M_PI / 3) * arrowSize);
+
+    // Set the arrowhead fill color to match the edge color
+    switch (this->edge_type) {
+    case 0: painter->setBrush(Qt::green);       // New link
+        break;
+    case 1: painter->setBrush(Qt::red);         // Lost link
+        break;
+    }
+
+    // Draw the arrowhead as a filled triangle
+    painter->drawPolygon(QPolygonF() << line.p2() << destArrowP1 << destArrowP2);
+}
+
+
 //Function to evaluate parking lot status
 void MainWindow::evaluateParkingStatus(int nodeID)
 {
