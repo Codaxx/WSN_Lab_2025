@@ -167,7 +167,7 @@ void MainWindow::receive() {
             }
 
             //Change of network topology -- new link is added
-            //e.g. NewLink: 1 -> 2
+            //e.g. NewLink: 1 - 2
             else if (str.contains("NewLink:")){
                 int new_src;
                 int new_dest;
@@ -187,7 +187,7 @@ void MainWindow::receive() {
                             printf("%d\n",new_src);
                             printf("%d\n",new_dest);
                             qDebug() << "Link between nodes: " << new_src << " and " << new_dest;
-                            
+
                             for(Edge *existing_edge: edges){
                                 if((existing_edge->sourceNode() == nodes.at(new_src))
                                         && (existing_edge->destNode() == nodes.at(new_dest))){
@@ -610,13 +610,13 @@ void MainWindow::evaluateParkingStatus(int nodeID)
     if (state.light >= 0 && state.distance >= 0) {
         if (state.light < 20 && state.distance < 30) {
             QPixmap image(":images/occupied.jpg");
-            pop_up.setText("Node %1: OCCUPIED").arg(nodeID);
+            pop_up.setText(QString("Node %1: OCCUPIED").arg(nodeID));
             pop_up.setIconPixmap(image);
             pop_up.show();
             ui->textEdit_Status->append(QString("Node %1: Car detected - spot occupied").arg(nodeID));
         } else {
             QPixmap image(":images/empty.jpg");
-            pop_up.setText("Node %1: EMPTY").arg(nodeID);
+            pop_up.setText(QString("Node %1: EMPTY").arg(nodeID));
             pop_up.setIconPixmap(image);
             pop_up.show();
             ui->textEdit_Status->append(QString("Node %1: No car - spot available").arg(nodeID));
