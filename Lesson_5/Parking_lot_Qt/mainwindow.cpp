@@ -178,7 +178,7 @@ void MainWindow::receive(QString str) {
                 QStringList list = str.split(QRegExp("\\s"));
                 qDebug() << "Parsed serial input: " << str;
                 if (!list.isEmpty()) {
-                    qdebug() << "List size: " << list.size();
+                    ebug() << "List size: " << list.size();
                     for (int i = 0; i < list.size(); ++i) {
                         qdebug() << "List value " << i << ": " << list.at(i);
                         if(list.at(0) == "NewLink:") {
@@ -186,8 +186,8 @@ void MainWindow::receive(QString str) {
                             new_dest = list.at(3).toInt();
                             printf("%d\n",new_src);
                             printf("%d\n",new_dest);
-                            qDebug() << "Link between nodes: " << node1 << " and " << node2;
-                            widget->addEdge(node1, node2);
+                            qDebug() << "Link between nodes: " << new_src << " and " << new_dest;
+                            widget->addEdge(new_src, new_dest);
                         }
                     } 
                 }
@@ -377,27 +377,6 @@ void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
     // Draw the border of the scene area
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(sceneBounds);
-}
-
-//Not yet edited!!!!!
-//--------------------------------------------------------------------
-
-void MainWindow::on_pushButton_start_clicked() {
-    if (!m_record) {
-        ui->pushButton_start->setEnabled(false);
-        ui->doubleSpinBox_distance->setEnabled(false);
-        ui->pushButton_stop->setEnabled(true);
-        m_record = true;
-    }
-}
-
-void MainWindow::on_pushButton_stop_clicked() {
-    if (m_record) {
-        ui->pushButton_stop->setEnabled(false);
-        ui->pushButton_start->setEnabled(true);
-        ui->doubleSpinBox_distance->setEnabled(true);
-        m_record = false;
-    }
 }
 
 

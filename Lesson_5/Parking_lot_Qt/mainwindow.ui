@@ -21,8 +21,8 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>80</y>
-      <width>811</width>
+      <y>40</y>
+      <width>771</width>
       <height>351</height>
      </rect>
     </property>
@@ -79,58 +79,6 @@
      <string>Close</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>40</y>
-      <width>67</width>
-      <height>27</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Distance:</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton_start">
-    <property name="geometry">
-     <rect>
-      <x>170</x>
-      <y>40</y>
-      <width>97</width>
-      <height>27</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Start</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton_stop">
-    <property name="enabled">
-     <bool>false</bool>
-    </property>
-    <property name="geometry">
-     <rect>
-      <x>270</x>
-      <y>40</y>
-      <width>97</width>
-      <height>27</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Pause</string>
-    </property>
-   </widget>
-   <widget class="QDoubleSpinBox" name="doubleSpinBox_distance">
-    <property name="geometry">
-     <rect>
-      <x>80</x>
-      <y>40</y>
-      <width>81</width>
-      <height>27</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QLabel" name="label_3">
     <property name="geometry">
      <rect>
@@ -176,8 +124,8 @@
    <widget class="QLabel" name="label_light">
     <property name="geometry">
      <rect>
-      <x>850</x>
-      <y>120</y>
+      <x>820</x>
+      <y>70</y>
       <width>141</width>
       <height>31</height>
      </rect>
@@ -189,8 +137,8 @@
    <widget class="QLCDNumber" name="value_light">
     <property name="geometry">
      <rect>
-      <x>840</x>
-      <y>160</y>
+      <x>810</x>
+      <y>110</y>
       <width>171</width>
       <height>31</height>
      </rect>
@@ -208,8 +156,8 @@
    <widget class="QLCDNumber" name="value_distance">
     <property name="geometry">
      <rect>
-      <x>840</x>
-      <y>270</y>
+      <x>810</x>
+      <y>220</y>
       <width>171</width>
       <height>31</height>
      </rect>
@@ -227,8 +175,8 @@
    <widget class="QLabel" name="label_distance">
     <property name="geometry">
      <rect>
-      <x>850</x>
-      <y>230</y>
+      <x>820</x>
+      <y>180</y>
       <width>141</width>
       <height>31</height>
      </rect>
