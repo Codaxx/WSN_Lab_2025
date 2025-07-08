@@ -431,6 +431,51 @@ QVariant Node::itemChange(GraphicsItemChange change, const QVariant &value)
     return QGraphicsItem::itemChange(change, value);
 }
 
+void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
+{
+    // Remove any pen outline initially (used for base fill)
+    painter->setPen(Qt::NoPen);
+
+    // Set a dark gray background as the base layer for the node
+    painter->setBrush(Qt::darkGray);
+    painter->drawEllipse(-7, -7, 20, 20);
+
+    // Create a radial gradient for color effect
+    QRadialGradient gradient(-3, -3, 10);
+
+    // Get the list of all nodes from the main window to find this node's index
+    std::vector<Node*> nodes = parentWindow->nodes;
+    std::vector<Node*>::iterator it = std::find(nodes.begin(), nodes.end(), this);
+    int index = std::distance(nodes.begin(), it);
+
+    // Assign node colors based on their index to distinguish node roles
+    if (index == 0) {
+        // Master node: deep blue gradient
+        gradient.setColorAt(0, QColor(70, 130, 180));    // Steel Blue
+        gradient.setColorAt(1, QColor(30, 60, 90));      // Darker blue
+        painter->setBrush(gradient);
+    } else {
+        switch (index % 2) {
+            case 0:
+                // Even nodes: light blue to steel blue gradient
+                gradient.setColorAt(0, QColor(135, 206, 250));  // Light Sky Blue
+                gradient.setColorAt(1, QColor(70, 130, 180));   // Steel Blue
+                painter->setBrush(gradient);
+                break;
+            case 1:
+                // Odd nodes: light orange to peru gradient
+                gradient.setColorAt(0, QColor(255, 204, 153));  // Light Orange
+                gradient.setColorAt(1, QColor(205, 133, 63));   // Peru (brown-orange)
+                painter->setBrush(gradient);
+                break;
+        }
+    }
+
+    // Draw the main outline of the node
+    painter->setPen(QPen(Qt::black, 0));
+    painter->drawEllipse(-10, -10, 20, 20);
+}
+
 //Function to evaluate parking lot status
 void MainWindow::evaluateParkingStatus(int nodeID)
 {
