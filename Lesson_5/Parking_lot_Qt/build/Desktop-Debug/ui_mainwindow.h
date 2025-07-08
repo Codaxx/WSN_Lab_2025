@@ -12,15 +12,13 @@
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QComboBox>
-#include <QtWidgets/QDoubleSpinBox>
-#include <QtWidgets/QHeaderView>
+#include <QtWidgets/QLCDNumber>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpinBox>
 #include <QtWidgets/QStatusBar>
-#include <QtWidgets/QTableWidget>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QToolBar>
 #include <QtWidgets/QWidget>
@@ -36,15 +34,13 @@ public:
     QLabel *label;
     QPushButton *pushButton_open;
     QPushButton *pushButton_close;
-    QTableWidget *tableWidget;
-    QLabel *label_2;
-    QPushButton *pushButton_start;
-    QPushButton *pushButton_stop;
-    QDoubleSpinBox *doubleSpinBox_distance;
-    QPushButton *pushButton_clearTable;
     QLabel *label_3;
     QPushButton *pushButtonSetPower;
     QSpinBox *spinBoxPower;
+    QLabel *label_light;
+    QLCDNumber *value_light;
+    QLCDNumber *value_distance;
+    QLabel *label_distance;
     QMenuBar *menuBar;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
@@ -53,13 +49,13 @@ public:
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(838, 931);
+        MainWindow->resize(1018, 831);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QString::fromUtf8("centralWidget"));
         textEdit_Status = new QTextEdit(centralWidget);
         textEdit_Status->setObjectName(QString::fromUtf8("textEdit_Status"));
         textEdit_Status->setEnabled(true);
-        textEdit_Status->setGeometry(QRect(10, 510, 811, 351));
+        textEdit_Status->setGeometry(QRect(10, 40, 771, 351));
         comboBox_Interface = new QComboBox(centralWidget);
         comboBox_Interface->setObjectName(QString::fromUtf8("comboBox_Interface"));
         comboBox_Interface->setGeometry(QRect(50, 0, 151, 27));
@@ -73,35 +69,6 @@ public:
         pushButton_close->setObjectName(QString::fromUtf8("pushButton_close"));
         pushButton_close->setEnabled(false);
         pushButton_close->setGeometry(QRect(290, 0, 75, 27));
-        tableWidget = new QTableWidget(centralWidget);
-        if (tableWidget->columnCount() < 4)
-            tableWidget->setColumnCount(4);
-        QTableWidgetItem *__qtablewidgetitem = new QTableWidgetItem();
-        tableWidget->setHorizontalHeaderItem(0, __qtablewidgetitem);
-        QTableWidgetItem *__qtablewidgetitem1 = new QTableWidgetItem();
-        tableWidget->setHorizontalHeaderItem(1, __qtablewidgetitem1);
-        QTableWidgetItem *__qtablewidgetitem2 = new QTableWidgetItem();
-        tableWidget->setHorizontalHeaderItem(2, __qtablewidgetitem2);
-        QTableWidgetItem *__qtablewidgetitem3 = new QTableWidgetItem();
-        tableWidget->setHorizontalHeaderItem(3, __qtablewidgetitem3);
-        tableWidget->setObjectName(QString::fromUtf8("tableWidget"));
-        tableWidget->setGeometry(QRect(10, 70, 811, 421));
-        label_2 = new QLabel(centralWidget);
-        label_2->setObjectName(QString::fromUtf8("label_2"));
-        label_2->setGeometry(QRect(10, 40, 67, 27));
-        pushButton_start = new QPushButton(centralWidget);
-        pushButton_start->setObjectName(QString::fromUtf8("pushButton_start"));
-        pushButton_start->setGeometry(QRect(170, 40, 97, 27));
-        pushButton_stop = new QPushButton(centralWidget);
-        pushButton_stop->setObjectName(QString::fromUtf8("pushButton_stop"));
-        pushButton_stop->setEnabled(false);
-        pushButton_stop->setGeometry(QRect(270, 40, 97, 27));
-        doubleSpinBox_distance = new QDoubleSpinBox(centralWidget);
-        doubleSpinBox_distance->setObjectName(QString::fromUtf8("doubleSpinBox_distance"));
-        doubleSpinBox_distance->setGeometry(QRect(80, 40, 81, 27));
-        pushButton_clearTable = new QPushButton(centralWidget);
-        pushButton_clearTable->setObjectName(QString::fromUtf8("pushButton_clearTable"));
-        pushButton_clearTable->setGeometry(QRect(550, 40, 97, 27));
         label_3 = new QLabel(centralWidget);
         label_3->setObjectName(QString::fromUtf8("label_3"));
         label_3->setGeometry(QRect(550, 0, 51, 27));
@@ -113,10 +80,28 @@ public:
         spinBoxPower->setGeometry(QRect(610, 0, 44, 26));
         spinBoxPower->setMinimum(-40);
         spinBoxPower->setMaximum(8);
+        label_light = new QLabel(centralWidget);
+        label_light->setObjectName(QString::fromUtf8("label_light"));
+        label_light->setGeometry(QRect(820, 70, 141, 31));
+        value_light = new QLCDNumber(centralWidget);
+        value_light->setObjectName(QString::fromUtf8("value_light"));
+        value_light->setGeometry(QRect(810, 110, 171, 31));
+        value_light->setFrameShape(QFrame::Box);
+        value_light->setFrameShadow(QFrame::Plain);
+        value_light->setSegmentStyle(QLCDNumber::Flat);
+        value_distance = new QLCDNumber(centralWidget);
+        value_distance->setObjectName(QString::fromUtf8("value_distance"));
+        value_distance->setGeometry(QRect(810, 220, 171, 31));
+        value_distance->setFrameShape(QFrame::Box);
+        value_distance->setFrameShadow(QFrame::Plain);
+        value_distance->setSegmentStyle(QLCDNumber::Flat);
+        label_distance = new QLabel(centralWidget);
+        label_distance->setObjectName(QString::fromUtf8("label_distance"));
+        label_distance->setGeometry(QRect(820, 180, 141, 31));
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 838, 23));
+        menuBar->setGeometry(QRect(0, 0, 1018, 23));
         MainWindow->setMenuBar(menuBar);
         mainToolBar = new QToolBar(MainWindow);
         mainToolBar->setObjectName(QString::fromUtf8("mainToolBar"));
@@ -136,20 +121,10 @@ public:
         label->setText(QCoreApplication::translate("MainWindow", "Port:", nullptr));
         pushButton_open->setText(QCoreApplication::translate("MainWindow", "Open", nullptr));
         pushButton_close->setText(QCoreApplication::translate("MainWindow", "Close", nullptr));
-        QTableWidgetItem *___qtablewidgetitem = tableWidget->horizontalHeaderItem(0);
-        ___qtablewidgetitem->setText(QCoreApplication::translate("MainWindow", "Pkt num", nullptr));
-        QTableWidgetItem *___qtablewidgetitem1 = tableWidget->horizontalHeaderItem(1);
-        ___qtablewidgetitem1->setText(QCoreApplication::translate("MainWindow", "Distance", nullptr));
-        QTableWidgetItem *___qtablewidgetitem2 = tableWidget->horizontalHeaderItem(2);
-        ___qtablewidgetitem2->setText(QCoreApplication::translate("MainWindow", "Tx power", nullptr));
-        QTableWidgetItem *___qtablewidgetitem3 = tableWidget->horizontalHeaderItem(3);
-        ___qtablewidgetitem3->setText(QCoreApplication::translate("MainWindow", "RSSI", nullptr));
-        label_2->setText(QCoreApplication::translate("MainWindow", "Distance:", nullptr));
-        pushButton_start->setText(QCoreApplication::translate("MainWindow", "Start", nullptr));
-        pushButton_stop->setText(QCoreApplication::translate("MainWindow", "Pause", nullptr));
-        pushButton_clearTable->setText(QCoreApplication::translate("MainWindow", "Clear table", nullptr));
         label_3->setText(QCoreApplication::translate("MainWindow", "Power:", nullptr));
         pushButtonSetPower->setText(QCoreApplication::translate("MainWindow", "Set", nullptr));
+        label_light->setText(QCoreApplication::translate("MainWindow", "Light Sensor Readout", nullptr));
+        label_distance->setText(QCoreApplication::translate("MainWindow", "Light Sensor Readout", nullptr));
     } // retranslateUi
 
 };
