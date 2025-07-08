@@ -360,6 +360,27 @@ void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
 
 //Function for handling nodes
 
+Node::Node(GraphWidget *graphWidget, MainWindow *w)
+    : graph(graphWidget)
+{
+    parentWindow = w;
+    setFlag(ItemSendsGeometryChanges);
+    setCacheMode(DeviceCoordinateCache);
+    setZValue(-1);
+}
+
+// Return a list of all edges connected to this node
+QVector<Edge *> Node::edges() const
+{
+    return edgeList;
+}
+
+void Node::addEdge(Edge *edge)
+{
+    edgeList << edge;
+    edge->adjust();
+}
+
 void Node::calculateForces()
 {
     if (!scene() || scene()->mouseGrabberItem() == this) {
@@ -380,6 +401,34 @@ bool Node::advancePosition()
 
     setPos(newPos);
     return true;
+}
+
+QRectF Node::boundingRect() const
+{
+    qreal adjust = 2;
+    return QRectF( -10 - adjust, -10 - adjust, 23 + adjust, 23 + adjust);
+}
+
+QPainterPath Node::shape() const
+{
+    QPainterPath path;
+    path.addEllipse(-10, -10, 20, 20);
+    return path;
+}
+
+QVariant Node::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    switch (change) {
+    case ItemPositionHasChanged:
+        for (Edge *edge : qAsConst(edgeList))
+            edge->adjust();
+        graph->startLayoutRefresh();
+        break;
+    default:
+        break;
+    };
+
+    return QGraphicsItem::itemChange(change, value);
 }
 
 //Function to evaluate parking lot status
