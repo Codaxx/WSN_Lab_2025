@@ -205,6 +205,7 @@ void MainWindow::receive() {
                 }
             }
 
+            // Change to only receive LinkLost: 1, have to manually delete all edges !!!!!!!!!!!!!!!!!!!!!!!!
             //Handle link loss notification
             //e.g. LinkLost: 1 -> 2
             else if (str.contains("LinkLost:")) {
