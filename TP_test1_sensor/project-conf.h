@@ -14,7 +14,7 @@
 #define NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE 64 // *16 the checkrate in Hz. It should be a power of 2!
 
 // Max number of nodes in the network.
-#define MASTER_NODE_ID 61993  // 默认值
+#define MASTER_NODE_ID 64849  // 默认值
 
 
 

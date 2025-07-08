@@ -32,6 +32,8 @@ typedef struct{
 struct dao_packet {
   	uint8_t type;// Standard C includes:
 	linkaddr_t src;
+	uint8_t hop_count; 
+	uint16_t seq_id; 
 	uint8_t no_entries;
 	rt_entry table[MAX_NODES]; // battery status
 };
