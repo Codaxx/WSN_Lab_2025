@@ -145,6 +145,16 @@ void MainWindow::receive() {
                     int i = 0;
                     int sensorType = list.at(i+3).toInt();
                     int nodeID = list.at(i+1).toInt();
+                    // When nodeid is fetched, set this node as active
+                    switch (nodeID) {
+                        case 1: ui->work1->setChecked(true); break;
+                        case 2: ui->work2->setChecked(true); break;
+                        case 3: ui->work3->setChecked(true); break;
+                        case 4: ui->work4->setChecked(true); break;
+                        case 5: ui->work5->setChecked(true); break;
+                        case 6: ui->work6->setChecked(true); break;
+                        case 7: ui->work7->setChecked(true); break;
+                    }
                     double value = list.at(i+5).toInt();
                     qDebug() << "List size " << list.size();
                     qDebug() << "List value "<< i <<" "<< list.at(i);
@@ -152,13 +162,29 @@ void MainWindow::receive() {
                         //Light sensor
                         case 1:
                             nodeStates[nodeID].light = value;
-                            ui->value_light->display(value);
+                            switch (nodeID) {
+                                case 1: ui->value_light_1->display(value); break;
+                                case 2: ui->value_light_2->display(value); break;
+                                case 3: ui->value_light_3->display(value); break;
+                                case 4: ui->value_light_4->display(value); break;
+                                case 5: ui->value_light_5->display(value); break;
+                                case 6: ui->value_light_6->display(value); break;
+                                case 7: ui->value_light_7->display(value); break;
+                            }
                             qDebug() << "Val light" << QString::number(value);
                             break;
                         //Distance sensor
                         case 2:
                             nodeStates[nodeID].distance = value;
-                            ui->value_distance->display(value);
+                            switch (nodeID) {
+                                case 1: ui->value_distance_1->display(value); break;
+                                case 2: ui->value_distance_2->display(value); break;
+                                case 3: ui->value_distance_3->display(value); break;
+                                case 4: ui->value_distance_4->display(value); break;
+                                case 5: ui->value_distance_5->display(value); break;
+                                case 6: ui->value_distance_6->display(value); break;
+                                case 7: ui->value_distance_7->display(value); break;
+                            }
                             qDebug() << "Val distance" << QString::number(value);
                             break;
                     }
@@ -223,6 +249,16 @@ void MainWindow::receive() {
                         qDebug() << "List value " << i << ": " << list.at(i);
                         if (list.at(i) == "LinkLost:") {
                             lost_src = list.at(i+1).toInt();
+                            // Uncheck the corresponding checkbox for the lost source node
+                            switch (lost_src) {
+                                case 1: ui->work1->setChecked(false); break;
+                                case 2: ui->work2->setChecked(false); break;
+                                case 3: ui->work3->setChecked(false); break;
+                                case 4: ui->work4->setChecked(false); break;
+                                case 5: ui->work5->setChecked(false); break;
+                                case 6: ui->work6->setChecked(false); break;
+                                case 7: ui->work7->setChecked(false); break;
+                            }
                             lost_dest = list.at(i+3).toInt();
                             qDebug() << "Link lost between nodes: " << lost_src << " and " << lost_dest;
                             
@@ -605,17 +641,23 @@ void MainWindow::evaluateParkingStatus(int nodeID)
     const auto &state = nodeStates[nodeID];
 
     if (state.light >= 0 && state.distance >= 0) {
-        if (state.light < 20 && state.distance < 30) {
-            QPixmap image(":images/occupied.jpg");
-            pop_up.setText(QString("Node %1: OCCUPIED").arg(nodeID));
-            pop_up.setIconPixmap(image);
-            pop_up.show();
+        bool occupied = (state.light < 20 && state.distance < 30);
+
+        // Switch to select the correct checkbox
+        switch (nodeID) {
+            case 1: ui->park1->setChecked(!occupied); break;
+            case 2: ui->park2->setChecked(!occupied); break;
+            case 3: ui->park3->setChecked(!occupied); break;
+            case 4: ui->park4->setChecked(!occupied); break;
+            case 5: ui->park5->setChecked(!occupied); break;
+            case 6: ui->park6->setChecked(!occupied); break;
+            case 7: ui->park7->setChecked(!occupied); break;
+        }
+
+        // Write to text log
+        if (occupied) {
             ui->textEdit_Status->append(QString("Node %1: Car detected - spot occupied").arg(nodeID));
         } else {
-            QPixmap image(":images/empty.jpg");
-            pop_up.setText(QString("Node %1: EMPTY").arg(nodeID));
-            pop_up.setIconPixmap(image);
-            pop_up.show();
             ui->textEdit_Status->append(QString("Node %1: No car - spot available").arg(nodeID));
         }
     }
