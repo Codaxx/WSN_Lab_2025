@@ -12,8 +12,10 @@
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QComboBox>
+#include <QtWidgets/QGroupBox>
 #include <QtWidgets/QLCDNumber>
 #include <QtWidgets/QLabel>
+#include <QtWidgets/QListView>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QPushButton>
@@ -41,6 +43,15 @@ public:
     QLCDNumber *value_light;
     QLCDNumber *value_distance;
     QLabel *label_distance;
+    QListView *parking_lot_1;
+    QListView *parking_lot_3;
+    QListView *parking_lot_4;
+    QListView *parking_lot_5;
+    QListView *parking_lot_6;
+    QListView *parking_lot_7;
+    QListView *parking_lot_8;
+    QGroupBox *groupBox;
+    QLabel *label_2;
     QMenuBar *menuBar;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
@@ -82,7 +93,7 @@ public:
         spinBoxPower->setMaximum(8);
         label_light = new QLabel(centralWidget);
         label_light->setObjectName(QString::fromUtf8("label_light"));
-        label_light->setGeometry(QRect(820, 70, 141, 31));
+        label_light->setGeometry(QRect(820, 70, 161, 31));
         value_light = new QLCDNumber(centralWidget);
         value_light->setObjectName(QString::fromUtf8("value_light"));
         value_light->setGeometry(QRect(810, 110, 171, 31));
@@ -97,7 +108,34 @@ public:
         value_distance->setSegmentStyle(QLCDNumber::Flat);
         label_distance = new QLabel(centralWidget);
         label_distance->setObjectName(QString::fromUtf8("label_distance"));
-        label_distance->setGeometry(QRect(820, 180, 141, 31));
+        label_distance->setGeometry(QRect(820, 180, 161, 31));
+        parking_lot_1 = new QListView(centralWidget);
+        parking_lot_1->setObjectName(QString::fromUtf8("parking_lot_1"));
+        parking_lot_1->setGeometry(QRect(20, 410, 151, 151));
+        parking_lot_3 = new QListView(centralWidget);
+        parking_lot_3->setObjectName(QString::fromUtf8("parking_lot_3"));
+        parking_lot_3->setGeometry(QRect(480, 410, 151, 151));
+        parking_lot_4 = new QListView(centralWidget);
+        parking_lot_4->setObjectName(QString::fromUtf8("parking_lot_4"));
+        parking_lot_4->setGeometry(QRect(730, 410, 151, 151));
+        parking_lot_5 = new QListView(centralWidget);
+        parking_lot_5->setObjectName(QString::fromUtf8("parking_lot_5"));
+        parking_lot_5->setGeometry(QRect(20, 600, 151, 151));
+        parking_lot_6 = new QListView(centralWidget);
+        parking_lot_6->setObjectName(QString::fromUtf8("parking_lot_6"));
+        parking_lot_6->setGeometry(QRect(240, 590, 151, 151));
+        parking_lot_7 = new QListView(centralWidget);
+        parking_lot_7->setObjectName(QString::fromUtf8("parking_lot_7"));
+        parking_lot_7->setGeometry(QRect(480, 590, 151, 151));
+        parking_lot_8 = new QListView(centralWidget);
+        parking_lot_8->setObjectName(QString::fromUtf8("parking_lot_8"));
+        parking_lot_8->setGeometry(QRect(730, 590, 151, 151));
+        groupBox = new QGroupBox(centralWidget);
+        groupBox->setObjectName(QString::fromUtf8("groupBox"));
+        groupBox->setGeometry(QRect(220, 430, 191, 121));
+        label_2 = new QLabel(groupBox);
+        label_2->setObjectName(QString::fromUtf8("label_2"));
+        label_2->setGeometry(QRect(10, 30, 58, 18));
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
@@ -124,7 +162,9 @@ public:
         label_3->setText(QCoreApplication::translate("MainWindow", "Power:", nullptr));
         pushButtonSetPower->setText(QCoreApplication::translate("MainWindow", "Set", nullptr));
         label_light->setText(QCoreApplication::translate("MainWindow", "Light Sensor Readout", nullptr));
-        label_distance->setText(QCoreApplication::translate("MainWindow", "Light Sensor Readout", nullptr));
+        label_distance->setText(QCoreApplication::translate("MainWindow", "Distance Sensor Readout", nullptr));
+        groupBox->setTitle(QCoreApplication::translate("MainWindow", "GroupBox", nullptr));
+        label_2->setText(QCoreApplication::translate("MainWindow", "TextLabel", nullptr));
     } // retranslateUi
 
 };

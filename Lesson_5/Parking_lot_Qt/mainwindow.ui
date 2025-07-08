@@ -195,16 +195,6 @@
      </rect>
     </property>
    </widget>
-   <widget class="QListView" name="parking_lot_2">
-    <property name="geometry">
-     <rect>
-      <x>240</x>
-      <y>410</y>
-      <width>151</width>
-      <height>151</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QListView" name="parking_lot_3">
     <property name="geometry">
      <rect>
@@ -264,6 +254,32 @@
       <height>151</height>
      </rect>
     </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox">
+    <property name="geometry">
+     <rect>
+      <x>220</x>
+      <y>430</y>
+      <width>191</width>
+      <height>121</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>GroupBox</string>
+    </property>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>30</y>
+       <width>58</width>
+       <height>18</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>TextLabel</string>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
