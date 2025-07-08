@@ -138,7 +138,7 @@ void MainWindow::receive(QString str) {
             if(str.contains("SensorType:")){
                 QStringList list = str.split(QRegExp("\\s"));
                 //Display information in Qt console
-                qDebug() << "Received via Serial Link: " << str;
+                qDebug() << "Parsed serial input: " << str;
 
                 //Deals with different type of sensors
                 if(!list.isEmpty()){
@@ -176,7 +176,7 @@ void MainWindow::receive(QString str) {
 
                 //Extract node IDs from the string
                 QStringList list = str.split(QRegExp("\\s"));
-                qDebug() << "Received via Serial Link: " << str;
+                qDebug() << "Parsed serial input: " << str;
                 if (!list.isEmpty()) {
                     qdebug() << "List size: " << list.size();
                     for (int i = 0; i < list.size(); ++i) {
@@ -192,6 +192,45 @@ void MainWindow::receive(QString str) {
                     } 
                 }
             }
+
+            //Handle link loss notification
+            //e.g. LinkLost: 1 -> 2
+            else if (str.contains("LinkLost:")) {
+                int lost_src;
+                int lost_dest;
+                // Get the current scene from the GraphWidget to modify the visual graph
+                QGraphicsScene *scene = widget->scene();
+
+                //Extract node IDs from the string
+                QStringList list = str.split(QRegExp("\\s"));
+                qDebug() << "Parsed serial input: " << str;
+                if (!list.isEmpty()) {
+                    qDebug() << "List size: " << list.size();
+                    for (int i = 0; i < list.size(); ++i) {
+                        qDebug() << "List value " << i << ": " << list.at(i);
+                        if (list.at(i) == "LinkLost:") {
+                            lost_src = list.at(i+1).toInt();
+                            lost_dest = list.at(i+3).toInt();
+                            qDebug() << "Link lost between nodes: " << lost_src << " and " << lost_dest;
+                            
+                            // Remove any matching existing edge between the specified nodes
+                            for (Edge *existing_edge : edges) {
+                                if ((existing_edge->sourceNode() == nodes.at(lost_src)) &&
+                                    (existing_edge->destNode() == nodes.at(lost_dest))) {
+                                    scene->removeItem(existing_edge);
+                                }
+                            }
+
+                            // Add a new red edge to indicate the lost connection
+                            Edge *edge = new Edge(nodes.at(lost_src),
+                                      nodes.at(lost_dest), 1);
+                            scene->addItem(edge);
+                            edges.push_back(edge);
+                        }
+                    }
+                }
+            }
+
         }
     }
 }
