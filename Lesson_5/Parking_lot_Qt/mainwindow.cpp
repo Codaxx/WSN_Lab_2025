@@ -29,8 +29,6 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
 
-    // m_record = false;
-
     //set up ui from .ui file
     ui->setupUi(this);
 
@@ -43,7 +41,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //Warning message if no USB port is found
     if (ui->comboBox_Interface->count() == 0){
-        ui->textEdit_Status->insertPlainText("No USB ports available.\n");
+        ui->textEdit_Status->insertPlainText("No USB ports available.\nPlease have another try. \n");
     }
 
     //Initialize the topology graph
@@ -52,6 +50,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
         nodes.push_back(new Node(widget, this));
     }
     createDockWindows();
+
+    this->showMaximized();
 }
 
 MainWindow::~MainWindow() {
@@ -252,7 +252,7 @@ void MainWindow::receive() {
 void MainWindow::createDockWindows()
 {
     // Create a dock area labeled "Network" and allow docking on left/right sides
-    QDockWidget *dock = new QDockWidget(tr("Network"), this);
+    QDockWidget *dock = new QDockWidget(tr("Network Topology"), this);
     dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
 
     // Access the graphics scene for adding nodes
