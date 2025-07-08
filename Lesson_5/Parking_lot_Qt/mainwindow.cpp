@@ -460,28 +460,24 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
     std::vector<Node*>::iterator it = std::find(nodes.begin(), nodes.end(), this);
     int index = std::distance(nodes.begin(), it);
 
-    // Assign node colors based on their index to distinguish node roles
+    // Node coloring based on role
     if (index == 0) {
-        // Master node: deep blue gradient
+        // Master node: deep blue
         gradient.setColorAt(0, QColor(70, 130, 180));    // Steel Blue
         gradient.setColorAt(1, QColor(30, 60, 90));      // Darker blue
-        painter->setBrush(gradient);
-    } else {
-        switch (index % 2) {
-            case 0:
-                // Even nodes: light blue to steel blue gradient
-                gradient.setColorAt(0, QColor(135, 206, 250));  // Light Sky Blue
-                gradient.setColorAt(1, QColor(70, 130, 180));   // Steel Blue
-                painter->setBrush(gradient);
-                break;
-            case 1:
-                // Odd nodes: light orange to peru gradient
-                gradient.setColorAt(0, QColor(255, 204, 153));  // Light Orange
-                gradient.setColorAt(1, QColor(205, 133, 63));   // Peru (brown-orange)
-                painter->setBrush(gradient);
-                break;
-        }
+    } 
+    else if (index >= 1 && index <= 3) {
+        // Cluster heads: light blue
+        gradient.setColorAt(0, QColor(135, 206, 250));  // Light Sky Blue
+        gradient.setColorAt(1, QColor(70, 130, 180));   // Steel Blue
+    } 
+    else {
+        // Regular nodes: light orange
+        gradient.setColorAt(0, QColor(255, 204, 153));  // Light Orange
+        gradient.setColorAt(1, QColor(205, 133, 63));   // Peru
     }
+    // Apply the gradient to the painter
+    painter->setBrush(gradient);
 
     // Draw the main outline of the node
     painter->setPen(QPen(Qt::black, 0));
