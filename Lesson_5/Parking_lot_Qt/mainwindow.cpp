@@ -623,3 +623,13 @@ void MainWindow::evaluateParkingStatus(int nodeID)
         }
     }
 }
+
+void MainWindow::on_pushButtonSetPower_clicked()
+{
+    QByteArray data = QByteArray((int) 6, (char) 0);
+    data.insert(0, "cmd:");
+    data[4] = SERIAL_PACKET_TYPE_CONFIGURE_TEST;
+    data[5] = (signed char) ui->spinBoxPower->value();
+    this->send(data);
+}
+
