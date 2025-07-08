@@ -187,7 +187,19 @@ void MainWindow::receive() {
                             printf("%d\n",new_src);
                             printf("%d\n",new_dest);
                             qDebug() << "Link between nodes: " << new_src << " and " << new_dest;
-                            widget->addEdge(new_src, new_dest);
+                            
+                            for(Edge *existing_edge: edges){
+                                if((existing_edge->sourceNode() == nodes.at(new_src))
+                                        && (existing_edge->destNode() == nodes.at(new_dest))){
+                                    scene->removeItem(existing_edge);
+                                }
+                            }
+
+                            // Add a new green edge to indicate the lost connection
+                            Edge *edge = new Edge(nodes.at(new_src),
+                                                       nodes.at(new_dest), 0);
+                            scene->addItem(edge);
+                            edges.push_back(edge);
                         }
                     } 
                 }
