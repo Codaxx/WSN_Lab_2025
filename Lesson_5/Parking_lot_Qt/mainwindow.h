@@ -100,8 +100,7 @@ public:
     //Constructor initializes the widget and links it to the parent(MainWindow)
     GraphWidget(QWidget *parent = nullptr);
 
-    //Based on RSSI to call this function and decide if a node should be removed
-    void itemMoved();
+    void startLayoutRefresh();
 
 protected:
     //Update the position of nodes and refresh the visual layout

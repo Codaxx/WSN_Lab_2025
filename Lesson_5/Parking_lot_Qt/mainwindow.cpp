@@ -281,6 +281,104 @@ void MainWindow::send(QByteArray data) {
     uart->send(data);
 }
 
+// Constructor for GraphWidget, initializes the view and its scene
+GraphWidget::GraphWidget(QWidget *parent)
+    : QGraphicsView(parent)
+{
+    QGraphicsScene *scene = new QGraphicsScene(this);
+    scene->setItemIndexMethod(QGraphicsScene::NoIndex);
+    scene->setSceneRect(-400, -400, 800, 800);          // Define the visible area of the scene 
+    setScene(scene);
+    setCacheMode(CacheBackground);                      // Cache the background for better performance
+    setViewportUpdateMode(BoundingRectViewportUpdate);  // Only update areas that have changed, for better performance
+    setRenderHint(QPainter::Antialiasing);              // Turn on anti-aliasing to make shapes and lines smoother
+    setTransformationAnchor(AnchorUnderMouse);
+    scale(qreal(0.8), qreal(0.8));
+    setMinimumSize(800, 800);                           // Set a minimum window size to avoid too small a view
+
+    // Set the title shown when this view is opened as a window
+    setWindowTitle(tr("Network Topology"));
+}
+
+// Start the layout refresh timer if it's not already running
+void GraphWidget::startLayoutRefresh()
+{
+    if (!timerId)
+        timerId = startTimer(50);  // 50 ms interval for layout updates
+}
+
+void GraphWidget::timerEvent(QTimerEvent *event)
+{
+    Q_UNUSED(event);
+
+    QVector<Node *> nodes;
+    const QList<QGraphicsItem *> items = scene()->items();
+    for (QGraphicsItem *item : items) {
+        if (Node *node = qgraphicsitem_cast<Node *>(item))
+            nodes << node;
+    }
+
+    // Ask each node to calculate the forces acting on it (repulsion/attraction)
+    for (Node *node : qAsConst(nodes))
+        node->calculateForces();
+
+    // Attempt to apply the computed positions, check if any node actually moved
+    bool layoutChanged = false;
+    for (Node *node : qAsConst(nodes)) {
+        if (node->advancePosition())
+            layoutChanged = true;
+    }
+
+    // If no node changed its position, stop the timer to save resources
+    if (!layoutChanged) {
+        killTimer(timerId);
+        timerId = 0;
+    }
+}
+
+void Node::calculateForces()
+{
+    if (!scene() || scene()->mouseGrabberItem() == this) {
+        newPos = pos();
+        return;
+    }
+
+    QRectF sceneRect = scene()->sceneRect();
+    newPos = pos(); 
+    newPos.setX(qMin(qMax(newPos.x(), sceneRect.left() + 10), sceneRect.right() - 10));
+    newPos.setY(qMin(qMax(newPos.y(), sceneRect.top() + 10), sceneRect.bottom() - 10));
+}
+
+bool Node::advancePosition()
+{
+    if (newPos == pos())
+        return false;
+
+    setPos(newPos);
+    return true;
+}
+
+// Custom background painting for the topology graph view
+void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
+{
+    Q_UNUSED(rect);  // This implementation ignores the suggested redraw area
+
+    // Define the full scene area to apply the background
+    const QRectF sceneBounds = sceneRect();
+
+    // Draw a background gradient from top-left to bottom-right
+    QLinearGradient backgroundGradient(sceneBounds.topLeft(), sceneBounds.bottomRight());
+    backgroundGradient.setColorAt(0, Qt::white);       // Lighter at the top-left
+    backgroundGradient.setColorAt(1, Qt::lightGray);   // Darker at the bottom-right
+
+    // Fill the visible area with the gradient
+    painter->fillRect(rect.intersected(sceneBounds), backgroundGradient);
+
+    // Draw the border of the scene area
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRect(sceneBounds);
+}
+
 //Not yet edited!!!!!
 //--------------------------------------------------------------------
 void MainWindow::packet_received(QByteArray str) {
@@ -328,19 +426,6 @@ void MainWindow::on_pushButton_stop_clicked() {
     }
 }
 
-//Copytable function deleted
-void MainWindow::on_pushButton_clearTable_clicked() {
-    ui->tableWidget->setRowCount(0);
-}
-
-void MainWindow::on_pushButtonSetPower_clicked()
-{
-    QByteArray data = QByteArray((int) 6, (char) 0);
-    data.insert(0, "cmd:");
-    data[4] = SERIAL_PACKET_TYPE_CONFIGURE_TEST;
-    data[5] = (signed char) ui->spinBoxPower->value();
-    this->send(data);
-}
 
 //Function to evaluate parking lot status
 void MainWindow::evaluateParkingStatus(int nodeID)
