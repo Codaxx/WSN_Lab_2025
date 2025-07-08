@@ -381,32 +381,6 @@ void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
 
 //Not yet edited!!!!!
 //--------------------------------------------------------------------
-void MainWindow::packet_received(QByteArray str) {
-    if (str.length() == 0) return;
-
-    switch (str.at(0)) {
-    case SERIAL_PACKET_TYPE_POWER_TEST:
-        RadioTest radioTest;
-        radioTest.number = str.at(1);
-        radioTest.tx_power = str.at(2);
-        radioTest.rssi = str.at(3);
-
-        int row = ui->tableWidget->rowCount();
-        row++;
-        ui->tableWidget->setRowCount(row);
-        ui->tableWidget->scrollToBottom();
-        QTableWidgetItem *index = new QTableWidgetItem(QString::number(radioTest.number));
-        ui->tableWidget->setItem(row-1, 0, index);
-        QTableWidgetItem *distance = new QTableWidgetItem(QString::number(ui->doubleSpinBox_distance->value())); //tr("%1 %2").arg(row).arg(str)
-        ui->tableWidget->setItem(row-1, 1, distance);
-        QTableWidgetItem *TxPower = new QTableWidgetItem(QString::number(radioTest.tx_power));
-        ui->tableWidget->setItem(row-1, 2, TxPower);
-        QTableWidgetItem *RxPower = new QTableWidgetItem(QString::number(radioTest.rssi));
-        ui->tableWidget->setItem(row-1, 3, RxPower);
-
-        break;
-    }
-}
 
 void MainWindow::on_pushButton_start_clicked() {
     if (!m_record) {
