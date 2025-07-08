@@ -66,24 +66,25 @@ void hop_matrix(const unsigned char* template, unsigned char* target, const unsi
  * @param[in]   matrix      pointer of input matrix, 1*(dim*dim)
  * @param[out]   ordered     pointer of resulting matrix, 1*dim
  * @param[in]   dim         dimension of matrix
+ * @param[in]   battery     pointer of matrix, whose contents are the states of batteries
  */
-void ordering(const unsigned char* matrix, unsigned char* const ordered, const unsigned char dim) {
-    unsigned char operating_matrix[dim][2], ord[dim];
-    // sum every row to get the number of possible paths
-    // also indicate the numbering of every row.
+void ordering(const unsigned char* matrix, unsigned char* const ordered, const unsigned char dim, const float* battery) {
+    float operating_matrix[dim][2];
     for (int i = 0; i < dim; i++) {
         operating_matrix[i][0] = 0;
-        operating_matrix[i][1] = i;
+        operating_matrix[i][1] = (float)i;
         for (int j = 0; j < dim; j++) {
-            operating_matrix[i][0] += matrix[i*dim + j];
+            if (i==j)
+                operating_matrix[i][0] += 0;
+            else
+                operating_matrix[i][0] += (float)matrix[i*dim + j] * battery[i];
         }
     }
-    // apply bubble sort
     for (int i = 0; i < dim - 1; i++) {
         int swapped = 0;
         for (int j = 0; j < dim - 1 - i; j++) {
             if (operating_matrix[j][0] < operating_matrix[j + 1][0]) {
-                unsigned char temp = operating_matrix[j][0];
+                float temp = operating_matrix[j][0];
                 operating_matrix[j][0] = operating_matrix[j + 1][0];
                 operating_matrix[j + 1][0] = temp;
                 temp = operating_matrix[j][1];
@@ -94,9 +95,8 @@ void ordering(const unsigned char* matrix, unsigned char* const ordered, const u
         }
         if (!swapped) break;
     }
-    // assign ranking to result
     for (int i = 0; i < dim; i++) {
-        ordered[i] = operating_matrix[i][1];
+        ordered[i] = (unsigned char)operating_matrix[i][1];
     }
 }
 
@@ -150,9 +150,10 @@ unsigned char if_connect_each(const unsigned char* template, const unsigned char
  * @param[in]   num_cluster     aimed number of head, only implement 3
  * @param[in]   dim             dimension
  * @param[in]   master          pointer of matrix, which describes the connections between nodes and master, 1*dim
+ * @param[in]   battery     pointer of matrix, whose contents are the states of batteries
  * @param[out]   res             pointer of matrix, whose content is the numbering of chosen head, 1*num_cluster
  */
-void cluster_head_choose(const unsigned char* hop_template, const unsigned num_cluster, const unsigned char dim, const unsigned char* master, unsigned char* const res) {
+void cluster_head_choose(const unsigned char* hop_template, const unsigned num_cluster, const unsigned char dim, const unsigned char* master, const float* battery , unsigned char* const res) {
     unsigned char matrix_hop1[dim*dim], matrix_hop2[dim*dim], matrix_hop3[dim*dim];
     // hop1
     hop_matrix(hop_template, matrix_hop1, dim, 1);
@@ -162,18 +163,15 @@ void cluster_head_choose(const unsigned char* hop_template, const unsigned num_c
     hop_matrix(hop_template, matrix_hop3, dim, 3);
 
     unsigned char final_value_matrix[dim*dim];
-    // calculate a weighted adjacent matrix, used to order
     memset(&final_value_matrix, 0, dim*dim*sizeof(unsigned char));
     for (int i=0;i<dim; i++) {
         for (int j=0;j<dim;j++) {
-            const unsigned char weight[3] = {4, 2, 1};
-            final_value_matrix[i*dim + j] = weight[0]*matrix_hop1[i*dim + j] + weight[1]*matrix_hop2[i*dim + j] + weight[0]*matrix_hop3[i*dim + j];
+            const unsigned char weight[3] = {8, 4, 2};
+            final_value_matrix[i*dim + j] = weight[0]*value_regularization(matrix_hop1[i*dim + j], 1) + weight[1]*value_regularization(matrix_hop2[i*dim + j],2 ) + weight[2]*value_regularization(matrix_hop3[i*dim + j], 3);
         }
     }
     unsigned char ordered[dim];
-    ordering(final_value_matrix, ordered, dim);
-
-    // map numberings of pre-defined head-group to ordered numberings
+    ordering(final_value_matrix, ordered, dim, battery);
     unsigned char combination[10][num_cluster];
     for(int i=0; i<10; i++) {
         for(int j=0; j<num_cluster; j++) {
@@ -181,7 +179,6 @@ void cluster_head_choose(const unsigned char* hop_template, const unsigned num_c
         }
     }
 
-    // consider other two criterias
     unsigned char chosen_cluster[num_cluster];
     unsigned char to_master_matrix[10] = {0};
     // only consider choosing 3 clusters
@@ -194,16 +191,13 @@ void cluster_head_choose(const unsigned char* hop_template, const unsigned num_c
         to_each_matrix[i] = if_connect_each(hop_template, dim, combination[i], num_cluster);
     }
 
-    // sum up scores gained based on above two criterias
     unsigned char to_chosen_matrix[10] = {0};
     for (int i=0;i<10;i++) {
         to_chosen_matrix[i] = to_master_matrix[i] + to_each_matrix[i];
     }
-
-    // choose a combination based on the scores
     unsigned char target_grade = 6; //3+3 is the maximum value, means 3 nodes can connect to master as well as each
     for (int i=0;i<10;i++) {
-        if (to_chosen_matrix[i] >= target_grade && to_master_matrix[i] >= 0) {
+        if (to_chosen_matrix[i] >= target_grade && to_master_matrix[i]) {
             for (int j=0;j<num_cluster;j++) {
                 chosen_cluster[j] = combination[i][j];
             }
@@ -219,5 +213,125 @@ void cluster_head_choose(const unsigned char* hop_template, const unsigned num_c
     }
     for (int i=0;i<num_cluster;i++) {
         res[i] = chosen_cluster[i];
+    }
+}
+
+float num_allocated(const unsigned char* allocated, const unsigned char dim) {
+    float num = 0;
+    for(int i=0; i<dim; i++) {
+        num += (float)allocated[i];
+    }
+    return num;
+}
+
+int greatest_value_index(const float* matrix, const int length) {
+    int index = 0;
+    float temp = matrix[0];
+    for(int i=1; i<length; i++) {
+        if (matrix[i] >= temp) {
+            temp = matrix[i];
+            index = i;
+        }
+    }
+    return index;
+}
+
+void group_selection(const unsigned char num_cluster, const unsigned char* cluster, const unsigned char dim, const unsigned char* hop_template, const unsigned char* master, const float* battery, unsigned char* const res) {
+    unsigned char matrix_hop1[dim*dim];
+    unsigned char connection_summary[dim];
+    memset(connection_summary, 0, dim*sizeof(unsigned char));
+    unsigned char node_allocation[num_cluster][dim];
+    memset(node_allocation, 0, num_cluster*dim*sizeof(unsigned char));
+
+    // calculate the number of hops mainly for cluster's head
+    unsigned char all_hop_template[(dim+1)*(dim+1)];
+    memset(all_hop_template, 0, (dim+1)*(dim+1)*sizeof(unsigned char));
+    for(int i=0; i<dim+1; i++) {
+        for(int j=0; j<dim+1; j++) {
+            if (i == 0) {
+                if (j == 0) {
+                    all_hop_template[i*(dim+1) + j] = 0;
+                }else {
+                    all_hop_template[i*(dim+1) + j] = master[j-1];
+                }
+            }else {
+                if (j == 0) {
+                    all_hop_template[i*(dim+1) + j] = master[i-1];
+                }else {
+                    all_hop_template[i*(dim+1) + j] = hop_template[(i-1)*dim + j-1];
+                }
+            }
+        }
+    }
+
+    unsigned char head_2_master_cost[num_cluster];
+    memset(head_2_master_cost, 0, num_cluster*sizeof(unsigned char));
+    unsigned char all_hop_matrix[(dim+1)*(dim+1)];
+    memset(all_hop_matrix, 0, num_cluster*sizeof(unsigned char));
+    unsigned char flag = 1, hop_num = 1;
+    while (flag) {
+        flag = 0;
+        hop_matrix(all_hop_template, all_hop_matrix, dim+1, hop_num);
+        for (int i=0; i<num_cluster; i++) {
+            if (all_hop_matrix[cluster[i]+1] > 0 && head_2_master_cost[i] == 0) {
+                head_2_master_cost[i] = hop_num;
+            }
+        }
+        for (int i=0; i<num_cluster; i++) {
+            if (head_2_master_cost[i] == 0) {
+                flag = 1;
+            }
+        }
+        hop_num ++;
+    }
+
+    // hop1
+    hop_matrix(hop_template, matrix_hop1, dim, 1);
+    for(int i=0; i<dim; i++) {
+        for(int j=0; j<num_cluster; j++) {
+            connection_summary[i] += matrix_hop1[i + dim*cluster[j]];
+        }
+    }
+
+    for(int k=1; k<=num_cluster; k++) {
+        for(int i=0; i<dim; i++) {
+            float head_value[num_cluster];
+            memset(head_value, 0, sizeof(float)*num_cluster);
+            for (int j=0; j<num_cluster; j++) {
+                if (matrix_hop1[i + dim*cluster[j]]*k == connection_summary[i] && connection_summary[i] != 0) {
+                    head_value[j] = battery[cluster[j]]/(num_allocated(node_allocation[j], dim)+1)/(float)head_2_master_cost[j];
+                }
+            }
+            if (connection_summary[i] == k) {
+                node_allocation[greatest_value_index(head_value, num_cluster)][i] = 1;
+            }
+        }
+    }
+    // assign value to res
+    for(int i=0; i<num_cluster; i++) {
+        for(int j=0; j<dim; j++) {
+            res[i*dim + j] = node_allocation[i][j];
+        }
+    }
+
+}
+
+void from_D2matrix_to_D1matrix(const unsigned char** D2matrix, const unsigned char D2dim, unsigned char* const D1matrix) {
+    for(int i=0; i<D2dim; i++){
+        for(int j=0; j<D2dim; j++){
+            D1matrix[i*D2dim+j] = D2matrix[i][j];
+        }
+    }
+}
+
+void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, const unsigned char dim){
+    for (int i=0; i<dim; i++) {
+        for (int j=0; j<dim; j++) {
+            if (rssi_matrix[i*dim+j] != 0) {
+                adjacent[i*dim+j] = 1;
+            }else {
+                adjacent[i*dim+j] = 0;
+            }
+        }
     }
 }

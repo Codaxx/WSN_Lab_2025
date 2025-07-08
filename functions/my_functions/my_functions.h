@@ -16,9 +16,14 @@ static unsigned char combination3[10][3] = {{0,1,2},{0,1,3},{0,1,4},{0,2,3},{0,2
 
 void matrix_multiply(const unsigned char* matrix_A, const unsigned char* matrix_B, const unsigned char dim, unsigned char* matrix_out);
 void hop_matrix(const unsigned char* template, unsigned char* target, const unsigned char dim, const unsigned char hop_time);
-void ordering(const unsigned char* matrix, unsigned char* const ordered, const unsigned char dim);
+void ordering(const unsigned char* matrix, unsigned char* const ordered, const unsigned char dim, const float* battery);
 unsigned char if_connect_master(const unsigned char* master_matrix, const unsigned char dim, const unsigned char* candidate_cluster, const unsigned char num);
 unsigned char if_connect_each(const unsigned char* template, const unsigned char dim, const unsigned char* candidate_cluster, const unsigned char num);
-void cluster_head_choose(const unsigned char* hop_template, const unsigned num_cluster, const unsigned char dim, const unsigned char* master, unsigned char* const res);
+void cluster_head_choose(const unsigned char* hop_template, const unsigned num_cluster, const unsigned char dim, const unsigned char* master, const float* battery , unsigned char* const res);
+float num_allocated(const unsigned char* allocated, const unsigned char dim);
+int greatest_value_index(const float* matrix, const int length);
+void group_selection(const unsigned char num_cluster, const unsigned char* cluster, const unsigned char dim, const unsigned char* hop_template, const unsigned char* master, const float* battery, unsigned char* const res);
+void from_D2matrix_to_D1matrix(const unsigned char** D2matrix, const unsigned char D2dim, unsigned char* const D1matrix);
+void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, const unsigned char dim);
 
 #endif
