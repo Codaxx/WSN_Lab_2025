@@ -230,10 +230,52 @@ void MainWindow::receive(QString str) {
                     }
                 }
             }
-
+            this->repaint();    // Force the GUI to refresh and reflect the latest topology changes
+            str.clear();        // Reset the input buffer for the next line of serial data
         }
     }
 }
+
+//Setup the dock widget and place each node in its initial position according to their roles (master, cluster heads, normal nodes)
+void MainWindow::createDockWindows()
+{
+    // Create a dock area labeled "Network" and allow docking on left/right sides
+    QDockWidget *dock = new QDockWidget(tr("Network"), this);
+    dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+
+    // Access the graphics scene for adding nodes
+    QGraphicsScene *scene = widget->scene();
+
+    // Add all nodes into the graphics scene for visualization
+    for (int i = 0; i < nodes.size(); ++i) {
+        scene->addItem(nodes.at(i));
+    }
+
+    // Position the master node at the top center
+    nodes.at(0)->setPos(0, -200);
+
+    // Arrange cluster heads in the middle layer, spaced horizontally
+    nodes.at(1)->setPos(-200, 0);
+    nodes.at(2)->setPos(0, 0);
+    nodes.at(3)->setPos(200, 0);
+
+    // Place remaining nodes under their respective cluster heads
+    // Group 1: Nodes under cluster head 1
+    nodes.at(4)->setPos(-250, 150);
+    nodes.at(5)->setPos(-150, 150);
+
+    // Group 2: Nodes under cluster head 2
+    nodes.at(6)->setPos(-50, 150);
+    nodes.at(7)->setPos(50, 150);
+
+    // Group 3: Node under cluster head 3
+    nodes.at(8)->setPos(200, 150);
+
+    // Put the GraphWidget into the dock and add it to the main window
+    dock->setWidget(widget);
+    addDockWidget(Qt::RightDockWidgetArea, dock);
+}
+
 
 void MainWindow::send(QByteArray data) {
     uart->send(data);
