@@ -490,8 +490,8 @@ void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
 
 //Function for handling nodes
 
-Node::Node(GraphWidget *graphWidget, MainWindow *w, NodeType type_)
-    : graph(graphWidget), type(type_)
+Node::Node(GraphWidget *graphWidget, MainWindow *w, NodeType ntype_)
+    : graph(graphWidget), ntype(ntype_)
 {
     parentWindow = w;
     setFlag(ItemSendsGeometryChanges);
@@ -547,7 +547,7 @@ QPainterPath Node::shape() const
 }
 
 void Node::setType(NodeType newType) {
-    type = newType;
+    ntype = newType;
     update();  
 }
 
@@ -584,7 +584,7 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
     int index = std::distance(nodes.begin(), it);
 
     // Node coloring based on role
-    switch (type) {
+    switch (ntype) {
     case Master:
         // Master node: deep blue
         gradient.setColorAt(0, QColor(70, 130, 180));    // Steel Blue

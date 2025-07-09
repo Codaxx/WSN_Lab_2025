@@ -12,15 +12,9 @@
 #include <QVector>
 #include "qextserialport.h"
 #include "qextserialenumerator.h"
-#include <QtSql>
-#include <QSqlDatabase>
-#include <QSqlError>
-#include <QSqlQuery>
 
-//Constants representing packet types for serial communication
 #define SERIAL_PACKET_TYPE_CONFIGURE_TEST   0
-#define SERIAL_PACKET_TYPE_POWER_TEST       1
-
+#define SERIAL_PACKET_TYPE_POWER_TEST   0
 
 class GraphWidget;
 class Node;
@@ -126,15 +120,14 @@ private:
 class Node : public QGraphicsItem
 {
 
-enum NodeType {
-    Master,
-    ClusterHead,
-    Normal
-};
-
 public:
+    enum NodeType {
+        Master,
+        ClusterHead,
+        Normal
+    };
     //This constructor links the node to the graph view and its parent Mainwindow
-    Node(GraphWidget *graphWidget, MainWindow *w, NodeType type = Normal);
+    Node(GraphWidget *graphWidget, MainWindow *w, NodeType ntype = Normal);
 
     //Add an edge to the node
     void addEdge(Edge *edge);
@@ -164,6 +157,7 @@ public:
     //Responsible for drawing the node itself
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
+
 protected:
     //Used to notify the graph widget when its node is moved
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
@@ -181,7 +175,7 @@ private:
     //Reference to the Mainwindow
     MainWindow *parentWindow;
 
-    NodeType type;
+    NodeType ntype;
 };
 
 class Edge : public QGraphicsItem
