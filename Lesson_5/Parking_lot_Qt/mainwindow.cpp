@@ -309,7 +309,7 @@ void MainWindow::createDockWindows()
     QGraphicsScene *scene = widget->scene();
 
     // Add all nodes into the graphics scene for visualization
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < 9; i++) {
         scene->addItem(nodes.at(i));
     }
 
@@ -317,21 +317,21 @@ void MainWindow::createDockWindows()
     nodes.at(0)->setPos(0, -200);
 
     // Arrange cluster heads in the middle layer, spaced horizontally
-    nodes.at(1)->setPos(-200, 0);
+    nodes.at(1)->setPos(-175, -75);
     nodes.at(2)->setPos(0, 0);
-    nodes.at(3)->setPos(200, 0);
+    nodes.at(3)->setPos(175, -50);
 
     // Place remaining nodes under their respective cluster heads
     // Group 1: Nodes under cluster head 1
-    nodes.at(4)->setPos(-250, 150);
-    nodes.at(5)->setPos(-150, 150);
+    nodes.at(4)->setPos(-250, 100);
+    nodes.at(5)->setPos(-150, 75);
 
     // Group 2: Nodes under cluster head 2
     nodes.at(6)->setPos(-50, 150);
     nodes.at(7)->setPos(50, 150);
 
     // Group 3: Node under cluster head 3
-    nodes.at(8)->setPos(200, 150);
+    nodes.at(8)->setPos(200, 125);
 
     // Put the GraphWidget into the dock and add it to the main window
     dock->setWidget(widget);
