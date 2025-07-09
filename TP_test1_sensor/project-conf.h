@@ -3,7 +3,7 @@
 
 // PHY LAYER PARAMETERS
 #define GROUP_CHANNEL 12
-#define MAX_NODES 20
+#define MAX_NODES 10
 // Use the lowest value to create multi-hop network.
 #define TX_POWER 7
 #define TX_POWER_MAX 7
@@ -14,7 +14,8 @@
 #define NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE 64 // *16 the checkrate in Hz. It should be a power of 2!
 
 // Max number of nodes in the network.
-#define MASTER_NODE_ID 61993
+#define MASTER_NODE_ID 64849  // 默认值
+
 
 
 // logging level
