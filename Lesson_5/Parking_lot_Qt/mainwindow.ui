@@ -197,6 +197,9 @@
        <height>24</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
      <property name="text">
       <string>Spot available</string>
      </property>
@@ -209,6 +212,9 @@
        <width>121</width>
        <height>24</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
      </property>
      <property name="text">
       <string>Node working</string>
@@ -291,6 +297,9 @@
        <height>24</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
      <property name="text">
       <string>Spot available</string>
      </property>
@@ -303,6 +312,9 @@
        <width>121</width>
        <height>24</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
      </property>
      <property name="text">
       <string>Node working</string>
@@ -385,6 +397,9 @@
        <height>24</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
      <property name="text">
       <string>Spot available</string>
      </property>
@@ -397,6 +412,9 @@
        <width>121</width>
        <height>24</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
      </property>
      <property name="text">
       <string>Node working</string>
@@ -479,6 +497,9 @@
        <height>24</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
      <property name="text">
       <string>Spot available</string>
      </property>
@@ -491,6 +512,9 @@
        <width>121</width>
        <height>24</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
      </property>
      <property name="text">
       <string>Node working</string>
@@ -573,6 +597,9 @@
        <height>24</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
      <property name="text">
       <string>Spot available</string>
      </property>
@@ -585,6 +612,9 @@
        <width>121</width>
        <height>24</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
      </property>
      <property name="text">
       <string>Node working</string>
@@ -667,6 +697,9 @@
        <height>24</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
      <property name="text">
       <string>Spot available</string>
      </property>
@@ -679,6 +712,9 @@
        <width>121</width>
        <height>24</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
      </property>
      <property name="text">
       <string>Node working</string>
@@ -761,6 +797,9 @@
        <height>24</height>
       </rect>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
      <property name="text">
       <string>Spot available</string>
      </property>
@@ -773,6 +812,9 @@
        <width>121</width>
        <height>24</height>
       </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
      </property>
      <property name="text">
       <string>Node working</string>

@@ -28,6 +28,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //set up ui from .ui file
     ui->setupUi(this);
 
+    ui->park1->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+
     // Get available COM Ports
     this->uart = new Uart(this);
     QList<QextPortInfo> ports = uart->getUSBPorts();
