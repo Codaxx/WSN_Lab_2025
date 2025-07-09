@@ -201,7 +201,8 @@ void MainWindow::receive() {
                             qDebug() << "Val distance" << QString::number(value);
                             break;
                     }
-                        evaluateParkingStatus(nodeID);
+                    evaluateParkingStatus(nodeID);
+                    updateGraphBoxStyle();
                 }
             }
 
@@ -221,6 +222,7 @@ void MainWindow::receive() {
                     for (int i = 0; i < list.size(); i++) {
                         qDebug() << "List value " << i << ": " << list.at(i);
                         new_src = list.at(1).toInt();
+                        //If nodeID is 255, then it should be node 0 which is the master node, and all other node numbers should be added 1
                         new_src = (new_src == 255) ? 0 : new_src+1;
                         new_dest = list.at(3).toInt();
                         new_dest = (new_dest == 255) ? 0 : new_dest+1;
@@ -348,6 +350,17 @@ void MainWindow::send(QByteArray data) {
     qint64 bytesWritten = port.write(data);
     qDebug() << "Sent" << bytesWritten << "bytes:" << data;
 }
+
+// Set graphbox to green if parking is available and red if slot is not available or node is not working
+void MainWindow::updateGraphBoxStyle(){
+    bool allChecked = ui->park1->isChecked() && ui->work1->isChecked();
+    if(allChecked){
+        ui->slot_1->setStyleSheet("QGroupBox { background-color: lightgreen; }");
+    } else {
+        ui->slot_1->setStyleSheet("");
+    }
+}
+
 
 // Constructor for GraphWidget, initializes the view and its scene
 GraphWidget::GraphWidget(QWidget *parent)

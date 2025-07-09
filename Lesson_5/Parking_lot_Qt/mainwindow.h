@@ -74,6 +74,7 @@ private:
 
     void evaluateParkingStatus(int nodeID);
     void createDockWindows();
+    void updateGraphBoxStyle();
 
 
 private slots:
