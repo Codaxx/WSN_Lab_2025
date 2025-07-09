@@ -307,15 +307,30 @@ void MainWindow::receive() {
                     qDebug() << "List value " << i << ": " << list.at(i);
                 }
 
-                head1 = list.at(1).toInt();
-                head2 = list.at(2).toInt();
-                head3 = list.at(3).toInt();   
+                head1 = list.at(1).toInt() +1;
+                head2 = list.at(2).toInt() +1;
+                head3 = list.at(3).toInt() +1;
 
-                nodes.at(head1)->setPos(-175, -75);  
-                nodes.at(head2)->setPos(0, 0);    
-                nodes.at(head3)->setPos(175, -50);   
-                
+                nodes.at(head1)->setPos(nodePositions[1]);  
+                nodes.at(head2)->setPos(nodePositions[2]);    
+                nodes.at(head3)->setPos(nodePositions[3]);   
+
                 qDebug() << "Assigned cluster heads:" << head1 << head2 << head3;
+
+                // Start assigning positions from nodePositions[4]
+                int positionIndex = 4;
+
+                // Loop through all possible node IDs in the message, which are 0 ~ 7
+                for (int i = 0; i <= 7; ++i) {
+                    // Skip the nodes that are cluster heads
+                    if (i == head1 || i == head2 || i == head3) {
+                        continue;
+                    }
+                }
+
+                // nodes.at() is indexed from 1 because nodes.at(0) is the master
+                nodes.at(i + 1)->setPos(nodePositions[positionIndex]);
+                positionIndex++;
             }
 
             this->repaint();    // Force the GUI to refresh and reflect the latest topology changes

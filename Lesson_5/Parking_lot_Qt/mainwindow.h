@@ -32,13 +32,6 @@ namespace Ui {
     class MainWindow;
 }
 
-//Structure to store radio test result
-typedef struct {
-    unsigned char number;
-    signed char tx_power;
-    signed char rssi;
-} RadioTest;
-
 class MainWindow : public QMainWindow {
     Q_OBJECT
     friend class Node;
@@ -75,6 +68,22 @@ private:
     void evaluateParkingStatus(int nodeID);
     void createDockWindows();
     void updateGraphBoxStyle();
+
+    // Number of nodes in the graph
+    static const int NODE_COUNT = 9;
+
+    // Initial positions for each node, fixed as QPointF
+    const QPointF nodePositions[NODE_COUNT] = {
+        QPointF(0, -200),        // Node 0  Master node position
+        QPointF(-175, -75),      // Node 1  Head position 1
+        QPointF(0, 0),           // Node 2  Head position 2
+        QPointF(175, -50),       // Node 3  Head position 3
+        QPointF(-250, 100),      // Node 4  
+        QPointF(-150, 75),       // Node 5  
+        QPointF(-50, 150),       // Node 6  
+        QPointF(50, 150),        // Node 7  
+        QPointF(200, 125)        // Node 8
+    };
 
 
 private slots:
