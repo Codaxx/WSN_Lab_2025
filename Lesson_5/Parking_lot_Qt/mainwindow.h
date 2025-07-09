@@ -125,9 +125,16 @@ private:
 
 class Node : public QGraphicsItem
 {
+
+enum NodeType {
+    Master,
+    ClusterHead,
+    Normal
+};
+
 public:
     //This constructor links the node to the graph view and its parent Mainwindow
-    Node(GraphWidget *graphWidget, MainWindow *w);
+    Node(GraphWidget *graphWidget, MainWindow *w, NodeType type = Normal);
 
     //Add an edge to the node
     void addEdge(Edge *edge);
@@ -151,6 +158,9 @@ public:
     //Defines the precise shape of the node
     QPainterPath shape() const override;
 
+    //Accessor for the node type
+    void setType(NodeType newType);
+
     //Responsible for drawing the node itself
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
@@ -170,6 +180,8 @@ private:
 
     //Reference to the Mainwindow
     MainWindow *parentWindow;
+
+    NodeType type;
 };
 
 class Edge : public QGraphicsItem

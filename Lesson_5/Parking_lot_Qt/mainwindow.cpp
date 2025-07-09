@@ -353,6 +353,14 @@ void MainWindow::createDockWindows()
     // Access the graphics scene for adding nodes
     QGraphicsScene *scene = widget->scene();
 
+    // initialize master node
+    nodes.push_back(new Node(widget, this, Node::Master));
+
+    // initialize other nodes as Normal
+    for (int i = 1; i < 9; i++) {  
+        nodes.push_back(new Node(widget, this, Node::Normal));
+    }
+
     // Add all nodes into the graphics scene for visualization
     for (int i = 0; i < 9; i++) {
         scene->addItem(nodes.at(i));
@@ -482,8 +490,8 @@ void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
 
 //Function for handling nodes
 
-Node::Node(GraphWidget *graphWidget, MainWindow *w)
-    : graph(graphWidget)
+Node::Node(GraphWidget *graphWidget, MainWindow *w, NodeType type_)
+    : graph(graphWidget), type(type_)
 {
     parentWindow = w;
     setFlag(ItemSendsGeometryChanges);
@@ -538,6 +546,11 @@ QPainterPath Node::shape() const
     return path;
 }
 
+void Node::setType(NodeType newType) {
+    type = newType;
+    update();  
+}
+
 QVariant Node::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     switch (change) {
@@ -571,21 +584,24 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
     int index = std::distance(nodes.begin(), it);
 
     // Node coloring based on role
-    if (index == 0) {
+    switch (type) {
+    case Master:
         // Master node: deep blue
         gradient.setColorAt(0, QColor(70, 130, 180));    // Steel Blue
         gradient.setColorAt(1, QColor(30, 60, 90));      // Darker blue
-    } 
-    else if (index >= 1 && index <= 3) {
+        break;
+    case ClusterHead:
         // Cluster heads: light blue
         gradient.setColorAt(0, QColor(135, 206, 250));  // Light Sky Blue
         gradient.setColorAt(1, QColor(70, 130, 180));   // Steel Blue
-    } 
-    else {
+        break;
+    case Normal:
         // Regular nodes: light orange
         gradient.setColorAt(0, QColor(255, 204, 153));  // Light Orange
         gradient.setColorAt(1, QColor(205, 133, 63));   // Peru
+        break;
     }
+
     // Apply the gradient to the painter
     painter->setBrush(gradient);
 
