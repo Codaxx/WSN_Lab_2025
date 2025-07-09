@@ -41,10 +41,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
     // Get available COM Ports
-    this->uart = new Uart(this);
-    QList<QextPortInfo> ports = uart->getUSBPorts();
+    // this->uart = new Uart(this);
+    // QList<QextPortInfo> ports = uart->getUSBPorts();
+    QList<QextPortInfo> ports = QextSerialEnumerator::getPorts();
     for (int i = 0; i < ports.size(); i++) {
-        ui->comboBox_Interface->addItem(ports.at(i).portName.toLocal8Bit().constData());
+        QString portName = ports.at(i).portName;
+        if (portName.contains("ttyACM", Qt::CaseSensitive)){
+            ui->comboBox_Interface->addItem(portName.toLocal8Bit().constData());
+        }
     }
 
     //Warning message if no USB port is found
@@ -98,15 +102,15 @@ void MainWindow::on_pushButton_open_clicked() {
     }
 
     // Initialize UART connection
-    QString portname = "/dev/";
-    portname.append(ui->comboBox_Interface->currentText());
-    uart->open(portname);
-    if (!uart->isOpen())
-    {
-        error.setText("Open UART port unsuccessful, try again!");
-        error.show();
-        return;
-    }
+    // QString portname = "/dev/";
+    // portname.append(ui->comboBox_Interface->currentText());
+    // uart->open(portname);
+    // if (!uart->isOpen())
+    // {
+    //     error.setText("Open UART port unsuccessful, try again!");
+    //     error.show();
+    //     return;
+    // }
 
     //Once data is sensed, trigger mainwindow receive function and read serial data
     QObject::connect(&port, SIGNAL(readyRead()), this, SLOT(receive()));
@@ -118,7 +122,7 @@ void MainWindow::on_pushButton_open_clicked() {
 
 void MainWindow::on_pushButton_close_clicked() {
     if (port.isOpen()) port.close();
-    if (uart->isOpen()) uart->close();
+    // if (uart->isOpen()) uart->close();
     ui->pushButton_close->setEnabled(false);
     ui->pushButton_open->setEnabled(true);
     ui->comboBox_Interface->setEnabled(true);
@@ -335,7 +339,11 @@ void MainWindow::createDockWindows()
 
 
 void MainWindow::send(QByteArray data) {
-    uart->send(data);
+    // uart->send(data);
+    port.write(data);
+
+    qint64 bytesWritten = port.write(data);
+    qDebug() << "Sent" << bytesWritten << "bytes:" << data;
 }
 
 // Constructor for GraphWidget, initializes the view and its scene
