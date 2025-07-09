@@ -6,10 +6,6 @@
 #include <math.h>
 #include <vector>
 
-#include <QSqlDatabase>
-#include <QSqlDriver>
-#include <QSqlError>
-#include <QSqlQuery>
 #include <QFile>
 #include <QDir>
 #include <QFileDialog>
@@ -41,7 +37,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //Warning message if no USB port is found
     if (ui->comboBox_Interface->count() == 0){
-        ui->textEdit_Status->insertPlainText("No USB ports available.\nPlease have another try. \n");
+        ui->textEdit_Status->insertPlainText("No USB ports available.\nPlease have another try! \n");
     }
 
     //Initialize the topology graph
@@ -89,7 +85,7 @@ void MainWindow::on_pushButton_open_clicked() {
         return;
     }
 
-    //Initialize UART connection
+    // Initialize UART connection
     QString portname = "/dev/";
     portname.append(ui->comboBox_Interface->currentText());
     uart->open(portname);
