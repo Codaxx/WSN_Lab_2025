@@ -138,6 +138,7 @@ void MainWindow::receive() {
         //Detect end of line and decode from here
         if (ch == '\n'){
             str.remove("\n", Qt::CaseSensitive);
+            str.remove("\r");
 
             // Prepend current time to the incoming message string
             QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss");
@@ -205,8 +206,8 @@ void MainWindow::receive() {
             }
 
             //Change of network topology -- new link is added
-            //e.g. NewLink: 1 - 2
-            else if (str.contains("NewLink:")){
+            //e.g. NewLink 1 - 2
+            else if (str.contains("NewLink")){
                 int new_src;
                 int new_dest;
                 // Get the current scene from the GraphWidget to modify the visual graph

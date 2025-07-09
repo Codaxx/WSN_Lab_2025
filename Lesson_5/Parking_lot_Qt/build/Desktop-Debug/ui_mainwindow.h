@@ -166,7 +166,11 @@ public:
         value_light_1 = new QLCDNumber(slot_1);
         value_light_1->setObjectName(QString::fromUtf8("value_light_1"));
         value_light_1->setGeometry(QRect(110, 30, 64, 23));
-        value_light_1->setStyleSheet(QString::fromUtf8("border: 1px solid black"));
+        QFont font;
+        font.setBold(true);
+        value_light_1->setFont(font);
+        value_light_1->setStyleSheet(QString::fromUtf8("border: 1px solid black\n"
+""));
         distanc1 = new QLabel(slot_1);
         distanc1->setObjectName(QString::fromUtf8("distanc1"));
         distanc1->setGeometry(QRect(0, 60, 101, 18));
