@@ -509,6 +509,12 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
     // Create a radial gradient for color effect
     QRadialGradient gradient(-3, -3, 10);
 
+    // Paint number on each node
+    painter->setPen(Qt::black);
+    QFont font = painter->font();
+    font.setPointSize(8);
+    painter->setFont(font);
+
     // Get the list of all nodes from the main window to find this node's index
     std::vector<Node*> nodes = parentWindow->nodes;
     std::vector<Node*>::iterator it = std::find(nodes.begin(), nodes.end(), this);
@@ -532,6 +538,9 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
     }
     // Apply the gradient to the painter
     painter->setBrush(gradient);
+
+    // Draw the number
+    painter->drawText(-5, 5, QString::number(index));
 
     // Draw the main outline of the node
     painter->setPen(QPen(Qt::black, 0));
