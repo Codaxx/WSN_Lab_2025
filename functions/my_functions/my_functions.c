@@ -162,12 +162,6 @@ void cluster_head_choose(const unsigned char* hop_template, const unsigned num_c
     }
     unsigned char ordered[dim];
     ordering(final_value_matrix, ordered, dim, battery, rssi_criteria);
-
-    // for (int i=0;i<dim;i++) {
-    //     printf("%d ",ordered[i]);
-    // }
-    // printf("\n");
-
     unsigned char combination[10][num_cluster];
     for(int i=0; i<10; i++) {
         for(int j=0; j<num_cluster; j++) {
@@ -192,19 +186,22 @@ void cluster_head_choose(const unsigned char* hop_template, const unsigned num_c
         to_chosen_matrix[i] = to_master_matrix[i] + to_each_matrix[i];
     }
     unsigned char target_grade = 6; //3+3 is the maximum value, means 3 nodes can connect to master as well as each
-    for (int i=0;i<10;i++) {
-        if (to_chosen_matrix[i] >= target_grade && to_master_matrix[i]) {
-            for (int j=0;j<num_cluster;j++) {
-                chosen_cluster[j] = combination[i][j];
+    while (target_grade) {
+        for (int i=0;i<10;i++) {
+            if (to_chosen_matrix[i] >= target_grade && to_master_matrix[i] >= 1) {
+                for (int j=0;j<num_cluster;j++) {
+                    chosen_cluster[j] = combination[i][j];
+                }
+                target_grade = 0;
+                break;
             }
-            break;
         }
+        if (target_grade == 0) break;
         target_grade --;
         if (target_grade == 0) {
             for (int j=0;j<num_cluster;j++) {
                 chosen_cluster[j] = combination[0][j];
             }
-            break;
         }
     }
     for (int i=0;i<num_cluster;i++) {
@@ -259,18 +256,16 @@ void group_selection(const unsigned char num_cluster, const unsigned char* clust
             }
         }
     }
-    // matrix_printer(all_hop_template, dim+1);
 
     unsigned char head_2_master_cost[num_cluster];
     memset(head_2_master_cost, 0, num_cluster*sizeof(unsigned char));
     unsigned char all_hop_matrix[(dim+1)*(dim+1)];
     memset(all_hop_matrix, 0, num_cluster*sizeof(unsigned char));
-    unsigned char flag = 1, hop_num = 1;
+    unsigned char flag = 1, hop_num = 1, max_hop = dim;
     while (flag) {
         flag = 0;
         hop_matrix(all_hop_template, all_hop_matrix, dim+1, hop_num);
         for (int i=0; i<num_cluster; i++) {
-            // printf("%d", cluster[i]+1);
             if (all_hop_matrix[cluster[i]+1] > 0 && head_2_master_cost[i] == 0) {
                 head_2_master_cost[i] = hop_num;
             }
@@ -281,6 +276,7 @@ void group_selection(const unsigned char num_cluster, const unsigned char* clust
             }
         }
         hop_num ++;
+        if (hop_num > max_hop) break;
     }
 
     // hop1
@@ -356,7 +352,7 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
         }
         else {
             float battery_temp = 0, hop_weight;
-            unsigned char next = 255;
+            unsigned char next = 254;
             for (int j=0; j<num_head; j++) {
                 if (hop1[head[i]*dim+head[j]] != 0 && i != j) {
                     if (master[head[j]] == 1) hop_weight = 2;
@@ -367,7 +363,8 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
                     }
                 }
             }
-            printf("Newlink %d -> %d\r\n", head[i], next);
+            if (next != 254)
+                printf("Newlink %d -> %d\r\n", head[i], next);
         }
     }
     // second sent sub-node id
@@ -389,10 +386,8 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
             if (flag) {
                 // printf("i and head, %d, %d\n\r", i, head[j]);
                 unconnected_index[index][0] = i;
+                index += 1;
             }
-        }
-        if (unconnected_index[index][0] != 255) {
-            index += 1;
         }
     }
     for (int i=0; i<dim; i++) {
@@ -406,8 +401,8 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
     }
     // third sent rest-node id
     for (int i=0; i<dim; i++) {
-        if (unconnected_index[i][0] != 255) {
-            printf("------%d\n\r", unconnected_index[i][0]);
+        if (unconnected_index[i][0] != 255 && unconnected_index[i][1]  != 255) {
+            //printf("------%d\n\r", unconnected_index[i][0]);
             printf("Newlink %d -> %d\r\n", unconnected_index[i][0], unconnected_index[i][1]);
         }
     }
