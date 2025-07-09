@@ -8,17 +8,55 @@
 
 // Standard C includes:
 #include <stdio.h>      // For printf.
-
 #include "common/saadc-sensor.h"		// Saadc to read Battery Sensor.
 #include "common/temperature-sensor.h"
 #include "my_sensor.h"
 
+#define BUFFER_SIZE	3
+#define DIS_THRES	20
+#define	LIGHT_THRES	500
+#define	TEM_THRES	10
+
+static uint8_t trans_flag;
+static int distance_buffer[BUFFER_SIZE], light_buffer[BUFFER_SIZE], temperature_buffer[BUFFER_SIZE];
+static int global_index;
+static int distance_av_0, light_av_0, temperature_av_0;
+static int distance_av_1, light_av_1, temperature_av_1;
+
 static sensor_data recv_message;
+
+uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
+	return ((uint16_t)addr->u8[LINKADDR_SIZE - 2] << 8) | addr->u8[LINKADDR_SIZE - 1];
+}  
+
+void distance_av_cal(){
+	distance_av_1 = distance_av_0;
+	for(int i=0; i<BUFFER_SIZE; i++){
+		distance_av_0 += distance_buffer[i];
+	}
+	distance_av_0 /= BUFFER_SIZE;
+}
+
+void light_av_cal(){
+	light_av_1 = light_av_0;
+	for(int i=0; i<BUFFER_SIZE; i++){
+		light_av_0 += light_buffer[i];
+	}
+	light_av_0 /= BUFFER_SIZE;
+}
+
+void temperture_av_cal(){
+	temperature_av_1 = temperature_av_0;
+	for(int i=0; i<BUFFER_SIZE; i++){
+		temperature_av_0 += temperature_buffer[i];
+	}
+	temperature_av_0 /= BUFFER_SIZE;
+}
 
 void recv_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest){
 	memcpy(&recv_message, (sensor_data*)data, sizeof(recv_message));
 
-	printf("Received data are:\n\r");
+	printf("Received data are from %d:\n\r", get_node_id_from_linkaddr(&recv_message.source));
 	printf("batttery: [%d](mV)", recv_message.battery);
 	printf("temperature: [%d](C)", recv_message.temperature);
 	printf("light: [%d](lux)", recv_message.light_lux);
@@ -52,19 +90,37 @@ PROCESS_THREAD(sensor_reader, ev, data){
 		voltage = get_millivolts(saadc_sensor.value(BATTERY_SENSOR));
 		temperature = temperature_sensor.value(0)/4;
 
+		distance_buffer[global_index] = distance_value;
+		light_buffer[global_index] = light_value;
+		temperature_buffer[global_index] = temperature;
+		global_index ++;
+		if(global_index>=BUFFER_SIZE){
+			distance_av_cal();
+			light_av_cal();
+			temperture_av_cal();
+			global_index = 0;
+			trans_flag = 1;
+		}
+		if(ABS(distance_av_1-distance_av_0) >= DIS_THRES && ABS(light_av_1-light_av_0) >= LIGHT_THRES){
+			trans_flag = 1;
+		}
 		// assign data to packet;
-		packet.type = 3;
-		linkaddr_copy(&packet.source, &linkaddr_node_addr);
-		packet.light_lux = light_value;
-		packet.distance = distance_value;
-		packet.battery = voltage;
-		packet.temperature = temperature;
+		if(trans_flag){
+			packet.type = 3;
+			linkaddr_copy(&packet.source, &linkaddr_node_addr);
+			packet.light_lux = light_av_0;
+			packet.distance = distance_av_0;
+			packet.battery = voltage;
+			packet.temperature = temperature;
 
-		// transmit data
-		nullnet_buf = (uint8_t*) &packet;
-		nullnet_len = sizeof(packet);
-		NETSTACK_NETWORK.output(NULL);
+			// transmit data
+			nullnet_buf = (uint8_t*) &packet;
+			nullnet_len = sizeof(packet);
+			NETSTACK_NETWORK.output(NULL);
 
+			trans_flag = 0;
+		}
+		
 		etimer_reset(&sensor_reading_timer);
 	}
 

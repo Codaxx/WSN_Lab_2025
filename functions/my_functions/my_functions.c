@@ -335,3 +335,86 @@ void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, 
         }
     }
 }
+
+// new functions, mainly used for print message to be used by GUI
+
+void print_link_stage(const unsigned char* head, const unsigned char num_head, const unsigned char* head_sub_node, const unsigned char dim, const unsigned char* adjacent, const unsigned char* master, const float* battery) {
+    unsigned char hop1[dim*dim];
+    hop_matrix(adjacent, hop1, dim, 1);
+    unsigned char connection_summary[dim];
+    for (int i=0; i<dim; i++) {
+        for (int j=0; j<num_head; j++) {
+            connection_summary[i] += head_sub_node[i + dim*j];
+        }
+    }
+    // first sent head id
+    for (int i=0; i<num_head; i++) {
+        if (master[head[i]] == 1) {
+            printf("Newlink %d->255\r\n", head[i]);
+        }
+        else {
+            float battery_temp = 0, hop_weight;
+            unsigned char next = 255;
+            for (int j=0; j<num_head; j++) {
+                if (hop1[head[i]*dim+head[j]] != 0 && i != j) {
+                    if (master[head[j]] == 1) hop_weight = 2;
+                    else hop_weight = 0.5f;
+                    if (battery[head[j]]  * hop_weight > battery_temp) {
+                        battery_temp = battery[head[j]] * hop_weight;
+                        next = head[j];
+                    }
+                }
+            }
+            printf("Newlink %d->%d\r\n", head[i], next);
+        }
+    }
+    // second sent sub-node id
+    for (int i=0; i<num_head; i++) {
+        for (int j=0; j<dim; j++) {
+            if (head_sub_node[i*dim + j] != 0) {
+                printf("Newlink %d->%d\r\n",  j, head[i]);
+            }
+        }
+    }
+    unsigned char unconnected_index[dim][2], index=0;
+    memset(unconnected_index, 255, dim*2*sizeof(unsigned char));
+    for (int i=0; i<dim; i++) {
+        for (int j=0; j<num_head; j++) {
+            if (connection_summary[i] == 0 && head[j] != i) {
+                unconnected_index[index][0] = i;
+            }
+        }
+        if (unconnected_index[index][0] != 255) {
+            index += 1;
+        }
+    }
+    for (int i=0; i<dim; i++) {
+        if (unconnected_index[i][0] != 255) {
+            for (int j=0; j<dim; j++) {
+                if (hop1[unconnected_index[i][0]*dim + j] != 0) {
+                    unconnected_index[i][1] = j;
+                }
+            }
+        }
+    }
+    // third sent rest-node id
+    for (int i=0; i<dim; i++) {
+        if (unconnected_index[i][0] != 255) {
+            printf("Newlink %d->%d\r\n", unconnected_index[i][0], unconnected_index[i][1]);
+        }
+    }
+}
+
+void death_printer(const unsigned char* adjacent, const unsigned char dim) {
+    unsigned char connect_summary[dim];
+    for (int i=0; i<dim; i++) {
+        for (int j=0; j<dim; j++) {
+            connect_summary[i] += adjacent[i*dim+j];
+        }
+    }
+    for (int i=0; i<dim; i++) {
+        if (connect_summary[i] == 0) {
+            printf("Link Lost %d\r\n", i);
+        }
+    }
+}
