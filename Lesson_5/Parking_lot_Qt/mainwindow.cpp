@@ -220,26 +220,24 @@ void MainWindow::receive() {
                     qDebug() << "List size: " << list.size();
                     for (int i = 0; i < list.size(); ++i) {
                         qDebug() << "List value " << i << ": " << list.at(i);
-                        if(list.at(0) == "NewLink:") {
-                            new_src = list.at(1).toInt();
-                            new_dest = list.at(3).toInt();
-                            printf("%d\n",new_src);
-                            printf("%d\n",new_dest);
-                            qDebug() << "Link between nodes: " << new_src << " and " << new_dest;
+                        new_src = list.at(1).toInt();
+                        new_dest = list.at(3).toInt();
+                        printf("%d\n",new_src);
+                        printf("%d\n",new_dest);
+                        qDebug() << "Link between nodes: " << new_src << " and " << new_dest;
 
-                            for(Edge *existing_edge: edges){
-                                if((existing_edge->sourceNode() == nodes.at(new_src))
-                                        && (existing_edge->destNode() == nodes.at(new_dest))){
-                                    scene->removeItem(existing_edge);
-                                }
+                        for(Edge *existing_edge: edges){
+                            if((existing_edge->sourceNode() == nodes.at(new_src))
+                                     && (existing_edge->destNode() == nodes.at(new_dest))){
+                                scene->removeItem(existing_edge);
                             }
-
-                            // Add a new green edge to indicate the lost connection
-                            Edge *edge = new Edge(nodes.at(new_src),
-                                                       nodes.at(new_dest), 0);
-                            scene->addItem(edge);
-                            edges.push_back(edge);
                         }
+
+                        // Add a new green edge to indicate the lost connection
+                        Edge *edge = new Edge(nodes.at(new_src),
+                                                    nodes.at(new_dest), 0);
+                        scene->addItem(edge);
+                        edges.push_back(edge);
                     } 
                 }
             }
