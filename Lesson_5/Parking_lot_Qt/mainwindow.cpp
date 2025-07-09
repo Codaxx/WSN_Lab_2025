@@ -206,8 +206,8 @@ void MainWindow::receive() {
             }
 
             //Change of network topology -- new link is added
-            //e.g. NewLink 1 - 2
-            else if (str.contains("NewLink")){
+            //e.g. NewLink 1 -> 2
+            else if (str.contains("Newlink")){
                 int new_src;
                 int new_dest;
                 // Get the current scene from the GraphWidget to modify the visual graph
@@ -244,12 +244,12 @@ void MainWindow::receive() {
                 }
             }
 
-            // Change to only receive LinkLost: 1, have to manually delete all edges !!!!!!!!!!!!!!!!!!!!!!!!
-            //Handle link loss notification
-            //e.g. LinkLost: 1 -> 2
+            // Change to only receive LinkLost: 1, delete all edges manually
+            // Handle node loss notification
+            //e.g. LinkLost: 1
             else if (str.contains("LinkLost:")) {
                 int lost_src;
-                int lost_dest;
+                // int lost_dest;
                 // Get the current scene from the GraphWidget to modify the visual graph
                 QGraphicsScene *scene = widget->scene();
 
@@ -257,38 +257,40 @@ void MainWindow::receive() {
                 QStringList list = str.split(QRegExp("\\s"));
                 qDebug() << "Parsed serial input: " << str;
                 if (!list.isEmpty()) {
+
                     qDebug() << "List size: " << list.size();
+
                     for (int i = 0; i < list.size(); i++) {
                         qDebug() << "List value " << i << ": " << list.at(i);
-                        if (list.at(i) == "LinkLost:") {
-                            lost_src = list.at(i+1).toInt();
-                            // Uncheck the corresponding checkbox for the lost source node
-                            switch (lost_src) {
-                                case 1: ui->work1->setChecked(false); break;
-                                case 2: ui->work2->setChecked(false); break;
-                                case 3: ui->work3->setChecked(false); break;
-                                case 4: ui->work4->setChecked(false); break;
-                                case 5: ui->work5->setChecked(false); break;
-                                case 6: ui->work6->setChecked(false); break;
-                                case 7: ui->work7->setChecked(false); break;
-                            }
-                            lost_dest = list.at(i+3).toInt();
-                            qDebug() << "Link lost between nodes: " << lost_src << " and " << lost_dest;
-                            
-                            // Remove any matching existing edge between the specified nodes
-                            for (Edge *existing_edge : edges) {
-                                if ((existing_edge->sourceNode() == nodes.at(lost_src)) &&
-                                    (existing_edge->destNode() == nodes.at(lost_dest))) {
-                                    scene->removeItem(existing_edge);
-                                }
-                            }
-
-                            // Add a new red edge to indicate the lost connection
-                            Edge *edge = new Edge(nodes.at(lost_src),
-                                      nodes.at(lost_dest), 1);
-                            scene->addItem(edge);
-                            edges.push_back(edge);
+                        
+                        lost_src = list.at(i+1).toInt();
+                        // Uncheck the corresponding checkbox for the lost source node
+                        switch (lost_src) {
+                            case 1: ui->work1->setChecked(false); break;
+                            case 2: ui->work2->setChecked(false); break;
+                            case 3: ui->work3->setChecked(false); break;
+                            case 4: ui->work4->setChecked(false); break;
+                            case 5: ui->work5->setChecked(false); break;
+                            case 6: ui->work6->setChecked(false); break;
+                            case 7: ui->work7->setChecked(false); break;
                         }
+                        // lost_dest = list.at(i+3).toInt();
+                        // qDebug() << "Link lost between nodes: " << lost_src << " and " << lost_dest;
+                        qDebug() << "Node " << lost_src << " is offline, removing all related edges";
+                            
+                        // Remove any matching existing edge from and to the lost node
+                        for (Edge *existing_edge : edges) {
+                            if ((existing_edge->sourceNode() == nodes.at(lost_src)) ||
+                                (existing_edge->destNode() == nodes.at(lost_src))) {
+                                scene->removeItem(existing_edge);
+                            }
+                        }
+
+                        // Add a new red edge to indicate the lost connection
+                        // Edge *edge = new Edge(nodes.at(lost_src),
+                        //         nodes.at(lost_dest), 1);
+                        // scene->addItem(edge);
+                        // edges.push_back(edge);
                     }
                 }
             }
@@ -539,7 +541,7 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 
     // Draw node ID number on top of the node
     QFont font = painter->font();
-    font.setPointSize(8);
+    font.setPointSize(12);
     painter->setFont(font);
     painter->drawText(-5, 5, QString::number(index));
 }
