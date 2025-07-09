@@ -220,7 +220,7 @@ void MainWindow::receive() {
                 if (!list.isEmpty()) {
                     qDebug() << "List size: " << list.size();
                     for (int i = 0; i < list.size(); i++) {
-                        qDebug() << "List value " << i << ": " << list.at(i);
+                        // qDebug() << "List value " << i << ": " << list.at(i);
                         new_src = list.at(1).toInt();
                         //If nodeID is 255, then it should be node 0 which is the master node, and all other node numbers should be added 1
                         new_src = (new_src == 255) ? 0 : new_src+1;
@@ -228,7 +228,7 @@ void MainWindow::receive() {
                         new_dest = (new_dest == 255) ? 0 : new_dest+1;
                         printf("%d\n",new_src);
                         printf("%d\n",new_dest);
-                        qDebug() << "Link between nodes: " << new_src << " and " << new_dest;
+                        qDebug() << "New link between nodes: " << new_src << " and " << new_dest;
 
                         for(Edge *existing_edge: edges){
                             if((existing_edge->sourceNode() == nodes.at(new_src))
