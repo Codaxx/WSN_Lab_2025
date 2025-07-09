@@ -265,7 +265,7 @@ void MainWindow::receive() {
                     for (int i = 0; i < list.size(); i++) {
                         qDebug() << "List value " << i << ": " << list.at(i);
                         
-                        lost_src = list.at(i+1).toInt();
+                        lost_src = list.at(1).toInt();
                         // Uncheck the corresponding checkbox for the lost source node
                         switch (lost_src) {
                             case 1: ui->work1->setChecked(false); break;
@@ -296,6 +296,28 @@ void MainWindow::receive() {
                     }
                 }
             }
+
+            //e.g. ClusterHead: 2 3 6
+            else if (str.contains("ClusterHead:")) {
+                // Split the message
+                QStringList list = str.split(QRegExp("\\s"));
+                qDebug() << "Parsed serial input: " << str;
+
+                for (int i = 0; i < list.size(); i++) {
+                    qDebug() << "List value " << i << ": " << list.at(i);
+                }
+
+                head1 = list.at(1).toInt();
+                head2 = list.at(2).toInt();
+                head3 = list.at(3).toInt();   
+
+                nodes.at(head1)->setPos(-175, -75);  
+                nodes.at(head2)->setPos(0, 0);    
+                nodes.at(head3)->setPos(175, -50);   
+                
+                qDebug() << "Assigned cluster heads:" << head1 << head2 << head3;
+            }
+
             this->repaint();    // Force the GUI to refresh and reflect the latest topology changes
             str.clear();        // Reset the input buffer for the next line of serial data
         }
