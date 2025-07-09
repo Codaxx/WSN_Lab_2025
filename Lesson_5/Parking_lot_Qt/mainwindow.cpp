@@ -28,7 +28,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     //set up ui from .ui file
     ui->setupUi(this);
 
-    ui->park1->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    // Collect all checkboxes into a vector
+    QVector<QCheckBox *> checkboxes = {
+        ui->park1, ui->park2, ui->park3, ui->park4, ui->park5, ui->park6, ui->park7,
+        ui->work1, ui->work2, ui->work3, ui->work4, ui->work5, ui->work6, ui->work7
+    };
+
+    // Disable mouse click for each checkbox
+    for (QCheckBox *checkbox : checkboxes) {
+        checkbox->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        checkbox->setFocusPolicy(Qt::NoFocus);  // Optional: Prevent keyboard focus
+    }
 
     // Get available COM Ports
     this->uart = new Uart(this);
