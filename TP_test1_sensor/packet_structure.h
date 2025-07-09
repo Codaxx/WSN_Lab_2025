@@ -22,13 +22,6 @@ typedef struct{
 
 }routing_table;
 
-typedef struct{
-	uint8_t type;// Standard C includes:
-	linkaddr_t src;
-	uint8_t no_entries;
-	rt_entry table[MAX_NODES]; // battery status
-}node_info;
-
 
 struct rt_entry_pkt{
 	uint8_t type;// Standard C includes:

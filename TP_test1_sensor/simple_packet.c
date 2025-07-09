@@ -11,6 +11,8 @@
 #include "net/linkaddr.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 
 #include "packet_structure.h"
 #include "project-conf.h"
@@ -27,18 +29,17 @@ MEMB(rt_mem,rt_entry,MAX_NODES);
 
 
 
-static uint8_t check_local_rt(const linkaddr_t *addr)
-{
-	uint8_t in_list = 0;	
-	for(rt_entry *e= list_head(local_rt_table); e != NULL; e = e->next)
+rt_entry * check_local_rt(const linkaddr_t *addr)
+{ 
+  rt_entry *e= list_head(local_rt_table);
+	for(; e != NULL; e = e->next)
 	{
 		if(linkaddr_cmp(&e->dest, addr))
 		{
-			in_list = 1;
-			break;
+			return e;
 		}
 	}
-	return in_list;
+	return e;
 }
 uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
   return ((uint16_t)addr->u8[LINKADDR_SIZE - 2] << 8) | addr->u8[LINKADDR_SIZE - 1];
@@ -124,34 +125,28 @@ void update_local_rt_table(const linkaddr_t *dst, const linkaddr_t *next,uint8_t
     e->seq_no = seq_no;
     list_add(local_rt_table, e);  
   }
-
-
 }
-/*
-void print_dao_table_entries(const struct dao_packet *pkt)
+
+void patch_update_local_rt_table(const linkaddr_t *dst, const linkaddr_t *next,uint8_t tot_hop, int16_t metric,uint16_t seq_no)
 {
-  printf("DAO Packet from node ");
-  uint16_t src_id=get_node_id_from_linkaddr(&pkt->src);
-  printf("%u",src_id);
-  printf(", seq_id: %u, hop_count: %u, entries: %u\n",
-         pkt->seq_id, pkt->hop_count, pkt->no_entries);
+  rt_entry* e = check_local_rt(dst);
+    if (e == NULL)
+    {
+      update_local_rt_table(dst,dst,tot_hop,metric,seq_no);
+      LOG_INFO("Discover new nodes adding to the rt table:\n");
+    }
+    else if (abs(e->metric -metric) > 5)   
+    {
+      LOG_INFO("Update rt table with new metric:\n");
+      e->metric =metric ;
+    }
 
-  printf("+--------------------------------------------------------------+\n");
-  for (int i = 0; i < pkt->no_entries; i++) {
-    const rt_entry *e = &pkt->table[i]; 
-    int16_t dest_id = get_node_id_from_linkaddr(&e->dest);
-    int16_t next_id = get_node_id_from_linkaddr(&e->next_hop);
-    printf("| Entry %2d | dest: %u | next_hop: %u | hops: %u | metric: %d | seq: %u |\n",
-           i,
-           dest_id,
-           next_id,
-           e->tot_hop,
-           e->metric,
-           e->seq_no);
-  }
-  printf("+--------------------------------------------------------------+\n");
+
+
 }
-*/
+
+
+
 
 void print_rt_entries_pkt(const struct rt_entry_pkt *pkt)
 {
@@ -175,8 +170,6 @@ void print_rt_entries_pkt(const struct rt_entry_pkt *pkt)
   printf("+-----------------------------------------------------------------------------------+\n");
 }
 
-
-
 bool parent_is_in_rt_table(const linkaddr_t *src)
 {
   rt_entry *iter = list_head(local_rt_table);
@@ -199,6 +192,7 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
   pkt.hop_count = 0;
   pkt.seq_id = seq_id;
   rt_entry *iter = list_head(local_rt_table);
+  linkaddr_copy(&pkt.rt_src,     &iter->dest);
   for(; iter != NULL; iter = iter->next) {
     
     printf("  type: %d\n", iter->type);
@@ -233,9 +227,6 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
   printf("Sending packet to dest: %i\n", dest_id);
 }
 
-
-
-
 // Receive hello packet callback
 // 1.forward hello packet
 // 2.reply to the src node
@@ -250,38 +241,36 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
   linkaddr_t report_src;
   linkaddr_copy(&addr_master, &pkt->src_master);
   linkaddr_copy(&report_src, &pkt->src);
+  last_seq_id = pkt->seq_id;
   if(node_id == MASTER_NODE_ID) 
   {
     leds_single_off(LEDS_LED2);
     return;
   }
+
   // Avoid loops: if already seen, drop
-  if((pkt->seq_id <= last_seq_id) && !parent_is_in_rt_table(&report_src)){
-    leds_single_off(LEDS_LED2);
-    //LOG_INFO("The Packet has been Processed\r\n");
-    return;
-  }
+  //if((pkt->seq_id <=last_seq_id) && !parent_is_in_rt_table(&report_src)){
+  //  leds_single_off(LEDS_LED2);
+  //  LOG_INFO("The Packet has been Processed\r\n");
+  //  return;
+  //}
 
+  // processing the packet info
   int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
-  // Update sequence tracking
-  last_seq_id = pkt->seq_id;
-  // Increment hop count
   pkt->hop_count++;
-
   linkaddr_copy(&pkt->src, &linkaddr_node_addr);
-
 
   // initialization ip_table, and add flooding info
   // update_local_rt_table(master_node info + hello packet info);
   // flooding connectivity
 
   // adding the hello pkt_src to the routing table
-  update_local_rt_table(src, src,1,rssi,pkt->seq_id);
+  patch_update_local_rt_table(&report_src,&report_src,pkt->hop_count,rssi,pkt->seq_id);
 
   // other nodes adding the master node hop to the routing table
-  if (!linkaddr_cmp(src, &pkt->src_master))
+  if (!linkaddr_cmp(&report_src, &pkt->src_master))
   {
-    update_local_rt_table(&pkt->src_master, src,pkt->hop_count,rssi,pkt->seq_id);
+    patch_update_local_rt_table(&pkt->src_master,&report_src,pkt->hop_count,rssi,pkt->seq_id);
   }
 
   // print the local_rt_table
@@ -306,6 +295,24 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
   print_rt_entries_pkt(pkt);
   LOG_INFO("-------dao packet size-%u--------------",sizeof(struct rt_entry_pkt));
   
+  int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
+  rt_entry* e = check_local_rt(&pkt->src);
+    if (e == NULL)
+    {
+      update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
+      LOG_INFO("Discover new nodes adding to the rt table:\n");
+    }
+    else if (abs(e->metric - pkt->rt_metric) > 5)   
+    {
+      LOG_INFO("Update rt table with new metric:\n");
+      e->metric = pkt->rt_metric;
+    }
+
+
+
+  //update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
+
+  
   if(node_id == MASTER_NODE_ID)
   {  
     LOG_INFO("Master Node get RT_REPORT_PACKET:\n");
@@ -316,21 +323,29 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
       return;
     }
     // update the adjacency matrix
-    
     int dst_index = get_index_from_addr(&pkt->rt_dest);
-    adjacency_matrix[src_index][dst_index] = pkt->rt_metric;
-
-
+    if (src_index == dst_index) 
+    {
+      adjacency_matrix[src_index][dst_index] = 255;
+    }
+    else
+    {
+      adjacency_matrix[src_index][dst_index] = pkt->rt_metric;
+      adjacency_matrix[dst_index][src_index] = pkt->rt_metric;
+    }
     // go through the routing report rt_table, update the local rt table
     // note that next hop would be the packet src 
-      if (!check_local_rt(&pkt->rt_dest))
-      {
-        update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop,pkt->rt_metric,pkt->rt_seq_no);
-        print_local_routing_table(); 
-      }
-    
-
-    LOG_INFO("Updated local routing table:\n");
+    rt_entry* e = check_local_rt(&pkt->rt_dest);
+    if (e == NULL)
+    {
+      update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop,pkt->rt_metric,pkt->rt_seq_no);
+      LOG_INFO("Discover new nodes adding to the rt table:\n");
+    }
+    else if (abs(e->metric - pkt->rt_metric) > 5)   
+    {
+      LOG_INFO("Update rt table with new metric:\n");
+      e->metric = pkt->rt_metric;
+    }
     print_local_routing_table();
     print_adjacency_matrix();
     leds_single_off(LEDS_LED2);
@@ -338,8 +353,6 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
   else
   {
     // update my own local routing table
-    int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
-    update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
     // since local routing table update, routing report
     routing_report(&addr_master, pkt->hop_count, rssi,pkt->seq_id);
     LOG_INFO("Not the Master Node forwarding RT_REPORT_PACKET:\n");
@@ -347,7 +360,6 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
     nullnet_buf = (uint8_t *)&pkt;
     nullnet_len = sizeof(pkt);
     //nullnet_len = offsetof(struct dao_packet, table) + pkt->no_entries * sizeof(rt_entry);
-
     NETSTACK_NETWORK.output(dest); 
   }
 
@@ -387,10 +399,19 @@ PROCESS_THREAD(hello_process, ev, data) {
 
   //initiation the adjacency_matrix
   for (int i = 0; i < MAX_NODES; i++)
-  for (int j = 0; j < MAX_NODES; j++)
-    adjacency_matrix[i][j] = -1;  
-
-
+  {
+    for (int j = 0; j < MAX_NODES; j++)
+    {
+      if (i==j)
+      {
+        adjacency_matrix[i][j] = 255;  
+      }
+      else
+      {
+        adjacency_matrix[i][j] = -1;  
+      }
+    }
+  }
   memb_init(&rt_mem);
   list_init(local_rt_table);
   update_local_rt_table(&linkaddr_node_addr, &linkaddr_node_addr,0,0,0);
