@@ -418,3 +418,20 @@ void death_printer(const unsigned char* adjacent, const unsigned char dim) {
         }
     }
 }
+
+void matrix_printer(const unsigned char* const matrix, const unsigned char dim) {
+    for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+            printf("%02d ", matrix[i * dim + j]);
+        }
+        printf("\n");
+    }
+    printf("-----------------------------------\n\n");
+}
+
+unsigned char value_regularization(unsigned char data, const unsigned char hop_time) {
+    const float value = (float)data/(float)hop_time;
+    if (value == 0) return 0;
+    if (value < 2) return 1;
+    return (unsigned char)value;
+}
