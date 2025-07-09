@@ -58,9 +58,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     //Initialize the topology graph
     widget = new GraphWidget;
-    for (int i = 0; i<9; ++i){
-        nodes.push_back(new Node(widget, this));
-    }
+
     createDockWindows();
 
     this->showMaximized();
@@ -317,7 +315,11 @@ void MainWindow::receive() {
 
                 nodes.at(head1)->setPos(nodePositions[1]);  
                 nodes.at(head2)->setPos(nodePositions[2]);    
-                nodes.at(head3)->setPos(nodePositions[3]);   
+                nodes.at(head3)->setPos(nodePositions[3]);
+
+                nodes.at(head1)->setType(Node::ClusterHead);
+                nodes.at(head2)->setType(Node::ClusterHead);
+                nodes.at(head3)->setType(Node::ClusterHead);
 
                 qDebug() << "Assigned cluster heads:" << head1 << head2 << head3;
 
@@ -333,6 +335,7 @@ void MainWindow::receive() {
 
                 // nodes.at() is indexed from 1 because nodes.at(0) is the master
                 nodes.at(i+1)->setPos(nodePositions[positionIndex]);
+                nodes.at(i+1)->setType(Node::Normal);
                 positionIndex++;
                 }
             }
@@ -356,8 +359,13 @@ void MainWindow::createDockWindows()
     // initialize master node
     nodes.push_back(new Node(widget, this, Node::Master));
 
+    // initialize cluster heads
+    for (int i = 1; i < 4; i++) {
+        nodes.push_back(new Node(widget, this, Node::ClusterHead));
+    }
+
     // initialize other nodes as Normal
-    for (int i = 1; i < 9; i++) {  
+    for (int i = 4; i < 9; i++) {
         nodes.push_back(new Node(widget, this, Node::Normal));
     }
 
