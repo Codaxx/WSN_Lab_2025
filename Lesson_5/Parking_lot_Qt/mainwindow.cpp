@@ -299,6 +299,10 @@ void MainWindow::receive() {
 
             //e.g. ClusterHead: 2 3 6
             else if (str.contains("ClusterHead:")) {
+                int head1;
+                int head2;
+                int head3;
+
                 // Split the message
                 QStringList list = str.split(QRegExp("\\s"));
                 qDebug() << "Parsed serial input: " << str;
@@ -326,11 +330,11 @@ void MainWindow::receive() {
                     if (i == head1 || i == head2 || i == head3) {
                         continue;
                     }
-                }
 
                 // nodes.at() is indexed from 1 because nodes.at(0) is the master
-                nodes.at(i + 1)->setPos(nodePositions[positionIndex]);
+                nodes.at(i+1)->setPos(nodePositions[positionIndex]);
                 positionIndex++;
+                }
             }
 
             this->repaint();    // Force the GUI to refresh and reflect the latest topology changes
