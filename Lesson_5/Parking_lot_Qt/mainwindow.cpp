@@ -218,10 +218,12 @@ void MainWindow::receive() {
                 qDebug() << "Parsed serial input: " << str;
                 if (!list.isEmpty()) {
                     qDebug() << "List size: " << list.size();
-                    for (int i = 0; i < list.size(); ++i) {
+                    for (int i = 0; i < list.size(); i++) {
                         qDebug() << "List value " << i << ": " << list.at(i);
                         new_src = list.at(1).toInt();
+                        new_src = (new_src == 255) ? 0 : new_src+1;
                         new_dest = list.at(3).toInt();
+                        new_dest = (new_dest == 255) ? 0 : new_dest+1;
                         printf("%d\n",new_src);
                         printf("%d\n",new_dest);
                         qDebug() << "Link between nodes: " << new_src << " and " << new_dest;
@@ -235,7 +237,7 @@ void MainWindow::receive() {
 
                         // Add a new green edge to indicate the lost connection
                         Edge *edge = new Edge(nodes.at(new_src),
-                                                    nodes.at(new_dest), 0);
+                                            nodes.at(new_dest), 0);
                         scene->addItem(edge);
                         edges.push_back(edge);
                     } 
@@ -256,7 +258,7 @@ void MainWindow::receive() {
                 qDebug() << "Parsed serial input: " << str;
                 if (!list.isEmpty()) {
                     qDebug() << "List size: " << list.size();
-                    for (int i = 0; i < list.size(); ++i) {
+                    for (int i = 0; i < list.size(); i++) {
                         qDebug() << "List value " << i << ": " << list.at(i);
                         if (list.at(i) == "LinkLost:") {
                             lost_src = list.at(i+1).toInt();
