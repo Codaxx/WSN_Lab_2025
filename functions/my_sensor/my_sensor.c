@@ -21,3 +21,11 @@ int get_distance(int raw_value){
 	
 	return (int)dis;
 }
+
+int get_millivolts(uint16_t saadc_value){
+	// V_ref = 600mV
+	// gain = 1/6
+	// resolution = 2^12 = 4096
+	// converted = raw * (V_ref / gain) / resultion
+	return (int)((saadc_value * 3600UL) / 4096);
+}
