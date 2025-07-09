@@ -3,7 +3,7 @@
 
 // PHY LAYER PARAMETERS
 #define GROUP_CHANNEL 12
-#define MAX_NODES 20
+#define MAX_NODES 10
 // Use the lowest value to create multi-hop network.
 #define TX_POWER 7
 #define TX_POWER_MAX 7
