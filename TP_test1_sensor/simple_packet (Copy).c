@@ -27,6 +27,9 @@ MEMB(rt_mem,rt_entry,MAX_NODES);
 
 
 
+
+
+
 static uint8_t check_local_rt(const linkaddr_t *addr)
 {
 	uint8_t in_list = 0;	
@@ -40,6 +43,7 @@ static uint8_t check_local_rt(const linkaddr_t *addr)
 	}
 	return in_list;
 }
+
 uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
   return ((uint16_t)addr->u8[LINKADDR_SIZE - 2] << 8) | addr->u8[LINKADDR_SIZE - 1];
 }
@@ -127,7 +131,7 @@ void update_local_rt_table(const linkaddr_t *dst, const linkaddr_t *next,uint8_t
 
 
 }
-/*
+
 void print_dao_table_entries(const struct dao_packet *pkt)
 {
   printf("DAO Packet from node ");
@@ -151,30 +155,6 @@ void print_dao_table_entries(const struct dao_packet *pkt)
   }
   printf("+--------------------------------------------------------------+\n");
 }
-*/
-
-void print_rt_entries_pkt(const struct rt_entry_pkt *pkt)
-{
-  printf("DAO Packet from node ");
-  uint16_t pkt_src_id = get_node_id_from_linkaddr(&pkt->src);
-  printf("%u", pkt_src_id);
-  printf("+-----------------------------------------------------------------------------------+\n");
-  printf("|src   |  dest  | next_hop | hops | metric | seq_no |\n");
-  printf("+-----------------------------------------------------------------------------------+\n");
-    uint16_t src_id  = get_node_id_from_linkaddr(&pkt->rt_src);
-    uint16_t dest_id = get_node_id_from_linkaddr(&pkt->rt_dest);
-    uint16_t next_id = get_node_id_from_linkaddr(&pkt->rt_next_hop);
-    printf("| %5u  |  %5u |   %5u  |  %3u |  %5d |  %5u |\n",
-           src_id,
-           dest_id,
-           next_id,
-           pkt->rt_tot_hop,
-           pkt->rt_metric,
-           pkt->rt_seq_no);
-
-  printf("+-----------------------------------------------------------------------------------+\n");
-}
-
 
 
 bool parent_is_in_rt_table(const linkaddr_t *src)
@@ -189,15 +169,74 @@ bool parent_is_in_rt_table(const linkaddr_t *src)
   }
   return 0;
 }
+/*
+// routing report use this function, and it will send routing report packet to the dest
+static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uint16_t seq_id)
+{
+  // adding the local routing table info to the packet
+  static struct dao_packet pkt;
+  //memset(&pkt, 0, sizeof(pkt));
+  pkt.type = RT_REPORT_PACKET;
+  linkaddr_copy(&pkt.src, &linkaddr_node_addr);
+  //writing the local routing table to the packet
+  pkt.no_entries = 0;
+  pkt.hop_count  = 0; 
+  pkt.seq_id =  seq_id;
+  rt_entry *iter = list_head(local_rt_table);
+  for(; iter != NULL; iter = iter->next) {
+    //pkt.table[no_entries++]=iter;
+    /*
+    printf("Copying entry %d:\n", pkt.no_entries);
+    printf("  type: %d\n", iter->type);
+    uint16_t dest_id = get_node_id_from_linkaddr(&iter->dest);
+    uint16_t next_id = get_node_id_from_linkaddr(&iter->next_hop);
+    printf("  dest: %i\n",dest_id );
+    printf("  next_hop: %i\n", next_id);
+    printf("  tot_hop: %d\n", iter->tot_hop);
+    printf("  metric: %d\n", iter->metric);
+    printf("  seq_no: %u\n", iter->seq_no);
+    */
+    /*
+    pkt.table[pkt.no_entries].type     = iter->type;
+    linkaddr_copy(&pkt.table[pkt.no_entries].dest,     &iter->dest);
+    linkaddr_copy(&pkt.table[pkt.no_entries].next_hop, &iter->next_hop);
+    pkt.table[pkt.no_entries].tot_hop = iter->tot_hop;
+    pkt.table[pkt.no_entries].metric  = iter->metric;
+    pkt.table[pkt.no_entries].seq_no  = iter->seq_no;
+    */
+    /*
+    dest_id = get_node_id_from_linkaddr(&pkt.table[pkt.no_entries].dest);
+    next_id = get_node_id_from_linkaddr(&pkt.table[pkt.no_entries].next_hop);
+
+    printf("Entry %d: dest=%i next_hop=%i hop=%d metric=%d seq=%u\n",
+      pkt.no_entries,
+      dest_id,
+      next_id,
+      pkt.table[pkt.no_entries].tot_hop,
+      pkt.table[pkt.no_entries].metric,
+      pkt.table[pkt.no_entries].seq_no);
+    */
+   /*
+    pkt.no_entries++;
+  }
+  LOG_INFO("I have sent RT_REPORT_PACKET\n");
+  uint16_t dest_id = get_node_id_from_linkaddr(dest);
+  printf("Sending packet to dest: %i\n", dest_id);
+
+  // unicast to the parent node
+  nullnet_buf = (uint8_t *)&pkt;
+
+  nullnet_len = offsetof(struct dao_packet, table) + pkt.no_entries * sizeof(rt_entry);
+
+  NETSTACK_NETWORK.output(dest); 
+}*/
 
 static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uint16_t seq_id)
 {
   static struct rt_entry_pkt pkt;
   //memset(&pkt, 0, sizeof(pkt));
   pkt.type = RT_REPORT_PACKET;
-  linkaddr_copy(&pkt.src, &linkaddr_node_addr);
-  pkt.hop_count = 0;
-  pkt.seq_id = seq_id;
+  linkaddr_copy(&rt_entry_pkt.src, &linkaddr_node_addr);
   rt_entry *iter = list_head(local_rt_table);
   for(; iter != NULL; iter = iter->next) {
     
@@ -210,21 +249,23 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
     printf("  metric: %d\n", iter->metric);
     printf("  seq_no: %u\n", iter->seq_no);
     
-    linkaddr_copy(&pkt.rt_dest,     &iter->dest);
-    linkaddr_copy(&pkt.rt_next_hop, &iter->next_hop);
-    pkt.rt_tot_hop = iter->tot_hop;
-    pkt.rt_metric  = iter->metric;
-    pkt.rt_seq_no  = iter->seq_no;
+    linkaddr_copy(rt_entry_pkt.dest,     &iter->dest);
+    linkaddr_copy(rt_entry_pkt.next_hop, &iter->next_hop);
+    rt_entry_pkt.tot_hop = iter->tot_hop;
+    rt_entry_pkt.metric  = iter->metric;
+    rt_entry_pkt.seq_no  = iter->seq_no;
+  
+    dest_id = get_node_id_from_linkaddr(&rt_entry_pkt.dest);
+    next_id = get_node_id_from_linkaddr(&rt_entry_pkt.next_hop);
 
-
-    /*printf("Entry %d: dest=%i next_hop=%i hop=%d metric=%d\n",
+    printf("Entry %d: dest=%i next_hop=%i hop=%d metric=%d seq=%u\n",
       dest_id,
       next_id,
-      pkt.tot_hop,
-      pkt.metric);*/
-    clock_wait(CLOCK_SECOND / 20);  // 等待 50ms
+      rt_entry_pkt.tot_hop,
+      rt_entry_pkt.metric,
+      rt_entry_pkt.seq_no);
     nullnet_buf = (uint8_t *)&pkt;
-    nullnet_len = sizeof(pkt);
+    nullnet_len = sizeof(rt_entry_pkt);
     NETSTACK_NETWORK.output(dest); 
 
   }
@@ -256,11 +297,11 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
     return;
   }
   // Avoid loops: if already seen, drop
-  if((pkt->seq_id <= last_seq_id) && !parent_is_in_rt_table(&report_src)){
+  /*if((pkt->seq_id <= last_seq_id) && !parent_is_in_rt_table(src)){
     leds_single_off(LEDS_LED2);
     //LOG_INFO("The Packet has been Processed\r\n");
     return;
-  }
+  }*/
 
   int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
   // Update sequence tracking
@@ -300,11 +341,9 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
 {
   leds_single_on(LEDS_LED2);
   LOG_INFO("Receiving RT_REPORT_PACEKT:\n");
-  struct rt_entry_pkt *pkt = (struct rt_entry_pkt *)data;
-  //struct dao_packet *pkt = (struct dao_packet *)data;
-  //print_dao_table_entries(pkt);
-  print_rt_entries_pkt(pkt);
-  LOG_INFO("-------dao packet size-%u--------------",sizeof(struct rt_entry_pkt));
+  struct dao_packet *pkt = (struct dao_packet *)data;
+  print_dao_table_entries(pkt);
+  LOG_INFO("-------dao packet size-%u--------------",sizeof(struct dao_packet));
   
   if(node_id == MASTER_NODE_ID)
   {  
@@ -316,19 +355,23 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
       return;
     }
     // update the adjacency matrix
-    
-    int dst_index = get_index_from_addr(&pkt->rt_dest);
-    adjacency_matrix[src_index][dst_index] = pkt->rt_metric;
-
+    for (int i = 0; i < pkt->no_entries; i++) {
+      const rt_entry *e = &pkt->table[i];
+      int dst_index = get_index_from_addr(&e->dest);
+      if (dst_index == -1) continue;
+      adjacency_matrix[src_index][dst_index] = e->metric;
+    }
 
     // go through the routing report rt_table, update the local rt table
     // note that next hop would be the packet src 
-      if (!check_local_rt(&pkt->rt_dest))
+    for (int i = 0; i < pkt->no_entries; i++) {
+      const rt_entry *e = &pkt->table[i];
+      if (!check_local_rt(&e->dest))
       {
-        update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop,pkt->rt_metric,pkt->rt_seq_no);
+        update_local_rt_table(&e->dest,src,e->tot_hop,e->metric,e->seq_no);
         print_local_routing_table(); 
       }
-    
+    }
 
     LOG_INFO("Updated local routing table:\n");
     print_local_routing_table();
@@ -345,9 +388,8 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
     LOG_INFO("Not the Master Node forwarding RT_REPORT_PACKET:\n");
     const linkaddr_t *dest = get_next_hop_to(&addr_master);
     nullnet_buf = (uint8_t *)&pkt;
-    nullnet_len = sizeof(pkt);
-    //nullnet_len = offsetof(struct dao_packet, table) + pkt->no_entries * sizeof(rt_entry);
-
+    //nullnet_len = sizeof(pkt);
+    nullnet_len = offsetof(struct dao_packet, table) + pkt->no_entries * sizeof(rt_entry);
     NETSTACK_NETWORK.output(dest); 
   }
 
