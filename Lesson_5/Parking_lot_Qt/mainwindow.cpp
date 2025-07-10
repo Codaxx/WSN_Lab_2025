@@ -158,13 +158,14 @@ void MainWindow::receive() {
                     int nodeID = list.at(i+1).toInt();
                     // When nodeid is fetched, set this node as active
                     switch (nodeID) {
-                        case 1: ui->work1->setChecked(true); break;
-                        case 2: ui->work2->setChecked(true); break;
-                        case 3: ui->work3->setChecked(true); break;
-                        case 4: ui->work4->setChecked(true); break;
-                        case 5: ui->work5->setChecked(true); break;
-                        case 6: ui->work6->setChecked(true); break;
-                        case 7: ui->work7->setChecked(true); break;
+                        case 0: ui->work1->setChecked(true); break;
+                        case 1: ui->work2->setChecked(true); break;
+                        case 2: ui->work3->setChecked(true); break;
+                        case 3: ui->work4->setChecked(true); break;
+                        case 4: ui->work5->setChecked(true); break;
+                        case 5: ui->work6->setChecked(true); break;
+                        case 6: ui->work7->setChecked(true); break;
+                        case 7: ui->work8->setChecked(true); break;
                     }
                     double value = list.at(i+5).toInt();
                     qDebug() << "List size " << list.size();
@@ -174,13 +175,14 @@ void MainWindow::receive() {
                         case 1:
                             nodeStates[nodeID].light = value;
                             switch (nodeID) {
-                                case 1: ui->value_light_1->display(value); break;
-                                case 2: ui->value_light_2->display(value); break;
-                                case 3: ui->value_light_3->display(value); break;
-                                case 4: ui->value_light_4->display(value); break;
-                                case 5: ui->value_light_5->display(value); break;
-                                case 6: ui->value_light_6->display(value); break;
-                                case 7: ui->value_light_7->display(value); break;
+                                case 0: ui->value_light_1->display(value); break;
+                                case 1: ui->value_light_2->display(value); break;
+                                case 2: ui->value_light_3->display(value); break;
+                                case 3: ui->value_light_4->display(value); break;
+                                case 4: ui->value_light_5->display(value); break;
+                                case 5: ui->value_light_6->display(value); break;
+                                case 6: ui->value_light_7->display(value); break;
+                                case 7: ui->value_light_9->display(value); break;
                             }
                             qDebug() << "Val light" << QString::number(value);
                             break;
@@ -188,13 +190,14 @@ void MainWindow::receive() {
                         case 2:
                             nodeStates[nodeID].distance = value;
                             switch (nodeID) {
-                                case 1: ui->value_distance_1->display(value); break;
-                                case 2: ui->value_distance_2->display(value); break;
-                                case 3: ui->value_distance_3->display(value); break;
-                                case 4: ui->value_distance_4->display(value); break;
-                                case 5: ui->value_distance_5->display(value); break;
-                                case 6: ui->value_distance_6->display(value); break;
-                                case 7: ui->value_distance_7->display(value); break;
+                                case 0: ui->value_distance_1->display(value); break;
+                                case 1: ui->value_distance_2->display(value); break;
+                                case 2: ui->value_distance_3->display(value); break;
+                                case 3: ui->value_distance_4->display(value); break;
+                                case 4: ui->value_distance_5->display(value); break;
+                                case 5: ui->value_distance_6->display(value); break;
+                                case 6: ui->value_distance_7->display(value); break;
+                                case 7: ui->value_distance_9->display(value); break;
                             }
                             qDebug() << "Val distance" << QString::number(value);
                             break;
@@ -263,16 +266,17 @@ void MainWindow::receive() {
                     for (int i = 0; i < list.size(); i++) {
                         qDebug() << "List value " << i << ": " << list.at(i);
                         
-                        lost_src = list.at(1).toInt();
+                        lost_src = list.at(1).toInt(); 
                         // Uncheck the corresponding checkbox for the lost source node
                         switch (lost_src) {
-                            case 1: ui->work1->setChecked(false); break;
-                            case 2: ui->work2->setChecked(false); break;
-                            case 3: ui->work3->setChecked(false); break;
-                            case 4: ui->work4->setChecked(false); break;
-                            case 5: ui->work5->setChecked(false); break;
-                            case 6: ui->work6->setChecked(false); break;
-                            case 7: ui->work7->setChecked(false); break;
+                            case 0: ui->work1->setChecked(false); break;
+                            case 1: ui->work2->setChecked(false); break;
+                            case 2: ui->work3->setChecked(false); break;
+                            case 3: ui->work4->setChecked(false); break;
+                            case 4: ui->work5->setChecked(false); break;
+                            case 5: ui->work6->setChecked(false); break;
+                            case 6: ui->work7->setChecked(false); break;
+                            case 7: ui->work8->setChecked(false); break;
                         }
                         // lost_dest = list.at(i+3).toInt();
                         // qDebug() << "Link lost between nodes: " << lost_src << " and " << lost_dest;
@@ -409,14 +413,33 @@ void MainWindow::send(QByteArray data) {
 }
 
 // Set graphbox to green if parking is available and red if slot is not available or node is not working
-void MainWindow::updateGraphBoxStyle(){
-    bool allChecked = ui->park1->isChecked() && ui->work1->isChecked();
-    if(allChecked){
-        ui->slot_1->setStyleSheet("QGroupBox { background-color: lightgreen; }");
-    } else {
-        ui->slot_1->setStyleSheet("");
+// Update the background color of each slot depending on the checkbox states
+void MainWindow::updateGraphBoxStyle() {
+    // Iterate over slot_1 to slot_8
+    for (int i = 1; i <= 8; i++) {
+        // Dynamically access park and work checkboxes using QObject::findChild
+        QCheckBox *park = findChild<QCheckBox *>(QString("park%1").arg(i));
+        QCheckBox *work = findChild<QCheckBox *>(QString("work%1").arg(i));
+        QGroupBox *slot = findChild<QGroupBox *>(QString("slot_%1").arg(i));
+
+        // Safety check in case any object is not found
+        if (!park || !work || !slot)
+            continue;
+
+        // Determine the background color based on checkbox states
+        if (park->isChecked()) {
+            // If the parking sensor detects a car, set to green
+            slot->setStyleSheet("QGroupBox { background-color: lightgreen; }");
+        } else if (!work->isChecked()) {
+            // If the work sensor is NOT connected, set to red
+            slot->setStyleSheet("QGroupBox { background-color: lightcoral; }");
+        } else {
+            // Default case: reset to no background
+            slot->setStyleSheet("");
+        }
     }
 }
+
 
 
 // Constructor for GraphWidget, initializes the view and its scene
