@@ -327,15 +327,15 @@ void MainWindow::receive() {
                 int positionIndex = 4;
 
                 // Loop through all possible node IDs in the message, which are 0 ~ 7
-                for (int i = 0; i <= 7; ++i) {
+                for (int i = 1; i <= 8; ++i) {
                     // Skip the nodes that are cluster heads
                     if (i == head1 || i == head2 || i == head3) {
                         continue;
                     }
 
                 // nodes.at() is indexed from 1 because nodes.at(0) is the master
-                nodes.at(i+1)->setPos(nodePositions[positionIndex]);
-                nodes.at(i+1)->setType(Node::Normal);
+                nodes.at(i)->setPos(nodePositions[positionIndex]);
+                nodes.at(i)->setType(Node::Normal);
                 positionIndex++;
                 }
             }
@@ -375,24 +375,24 @@ void MainWindow::createDockWindows()
     }
 
     // Position the master node at the top center
-    nodes.at(0)->setPos(0, -200);
+    nodes.at(0)->setPos(nodePositions[0]);
 
     // Arrange cluster heads in the middle layer, spaced horizontally
-    nodes.at(1)->setPos(-175, -75);
-    nodes.at(2)->setPos(0, 0);
-    nodes.at(3)->setPos(175, -50);
+    nodes.at(1)->setPos(nodePositions[1]);
+    nodes.at(2)->setPos(nodePositions[2]);
+    nodes.at(3)->setPos(nodePositions[3]);
 
     // Place remaining nodes under their respective cluster heads
     // Group 1: Nodes under cluster head 1
-    nodes.at(4)->setPos(-250, 100);
-    nodes.at(5)->setPos(-150, 75);
+    nodes.at(4)->setPos(nodePositions[4]);
+    nodes.at(5)->setPos(nodePositions[5]);
 
     // Group 2: Nodes under cluster head 2
-    nodes.at(6)->setPos(-50, 150);
-    nodes.at(7)->setPos(50, 150);
+    nodes.at(6)->setPos(nodePositions[6]);
+    nodes.at(7)->setPos(nodePositions[7]);
 
     // Group 3: Node under cluster head 3
-    nodes.at(8)->setPos(200, 125);
+    nodes.at(8)->setPos(nodePositions[8]);
 
     // Put the GraphWidget into the dock and add it to the main window
     dock->setWidget(widget);

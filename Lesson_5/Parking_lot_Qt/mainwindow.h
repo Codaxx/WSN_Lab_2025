@@ -13,6 +13,8 @@
 #include "qextserialport.h"
 #include "qextserialenumerator.h"
 
+#include <QDateTime>
+
 #define SERIAL_PACKET_TYPE_CONFIGURE_TEST   0
 #define SERIAL_PACKET_TYPE_POWER_TEST   0
 
@@ -74,7 +76,7 @@ private:
     const QPointF nodePositions[NODE_COUNT] = {
         QPointF(0, -200),        // Node 0  Master node position
         QPointF(-175, -75),      // Node 1  Head position 1
-        QPointF(0, 0),           // Node 2  Head position 2
+        QPointF(0, -50),         // Node 2  Head position 2
         QPointF(175, -50),       // Node 3  Head position 3
         QPointF(-250, 100),      // Node 4  
         QPointF(-150, 75),       // Node 5  
