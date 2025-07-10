@@ -38,7 +38,7 @@ static int global_index;
 static int distance_av_0, light_av_0, temperature_av_0;
 static int distance_av_1, light_av_1, temperature_av_1;
 static sensor_data recv_message;
-
+const float battery[MASTER_NODE_ID] = {0.8f,0.9f, 0.7f, 1.0f, 0.9f, 0.8f, 0.6f, 0.8f,0.3f,0.6f};
 
 LIST(local_rt_table);
 MEMB(rt_mem,rt_entry,MAX_NODES);
@@ -329,11 +329,11 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
   struct rt_entry_pkt *pkt = (struct rt_entry_pkt *)data;
   //struct dao_packet *pkt = (struct dao_packet *)data;
   //print_dao_table_entries(pkt);
-  print_rt_entries_pkt(pkt);
-  LOG_INFO("-------dao packet size-%u--------------",sizeof(struct rt_entry_pkt));
-  
+  //print_rt_entries_pkt(pkt);
+  //LOG_INFO("-------dao packet size-%u--------------",sizeof(struct rt_entry_pkt));
+  pkt->hop_count++;
   int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
-  patch_update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
+  patch_update_local_rt_table(src,src,pkt->hop_count,rssi,pkt->seq_id);
 
 
   //update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
@@ -361,7 +361,7 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
     }
     // go through the routing report rt_table, update the local rt table
     // note that next hop would be the packet src 
-    patch_update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop,pkt->rt_metric,pkt->rt_seq_no);
+    patch_update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop+1,pkt->rt_metric,pkt->rt_seq_no);
     print_local_routing_table();
     print_adjacency_matrix();
     leds_single_off(LEDS_LED2);
@@ -419,8 +419,6 @@ static void HELLO_Callback(const void *data, uint16_t len,
      
   }
 }
-
-
 
 PROCESS(hello_process, "HELLO Flooding Process");
 PROCESS(sensro_report_process, "Hello Dummy Process");
@@ -553,7 +551,7 @@ PROCESS_THREAD(sensro_report_process, ev, data)
 
   PROCESS_END();
 }
-const float battery[MASTER_NODE_ID] = {0.8f,0.9f, 0.7f, 1.0f, 0.9f, 0.8f, 0.6f, 0.8f,0.3f,0.6f};
+
 PROCESS_THREAD(choose_ch_process, ev, data){
 	static struct etimer choose_timer;
   PROCESS_BEGIN();
@@ -577,11 +575,11 @@ PROCESS_THREAD(choose_ch_process, ev, data){
 		from_rssi_to_link(rssi, battery, MAX_NODES, (uint8_t*)link_table,head_list);
 		for (int i=0;i<MAX_NODES;i++) {
 			for (int j=0;j<MAX_NODES;j++) {
-				printf("%d ",link_table[i][j]);
+				//printf("%d ",link_table[i][j]);
 			}
-			printf("\n");
+			//printf("\n");
 		}
-		printf("===================================================\n\r");
+		//printf("===================================================\n\r");
 		etimer_reset(&choose_timer);
 		// route_ready = READY;
 
