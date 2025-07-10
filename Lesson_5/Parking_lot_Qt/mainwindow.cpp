@@ -440,8 +440,7 @@ void MainWindow::updateGraphBoxStyle() {
     }
 }
 
-
-
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Constructor for GraphWidget, initializes the view and its scene
 GraphWidget::GraphWidget(QWidget *parent)
     : QGraphicsView(parent)
@@ -519,6 +518,7 @@ void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
 }
 
 
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 //Function for handling nodes
 
 Node::Node(GraphWidget *graphWidget, MainWindow *w, NodeType ntype_)
@@ -567,13 +567,13 @@ bool Node::advancePosition()
 QRectF Node::boundingRect() const
 {
     qreal adjust = 2;
-    return QRectF( -10 - adjust, -10 - adjust, 23 + adjust, 23 + adjust);
+    return QRectF( -20 - adjust, -20 - adjust, 43 + adjust, 43 + adjust);
 }
 
 QPainterPath Node::shape() const
 {
     QPainterPath path;
-    path.addEllipse(-10, -10, 20, 20);
+    path.addEllipse(-20, -20, 40, 40);
     return path;
 }
 
@@ -604,10 +604,10 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 
     // Set a dark gray background as the base layer for the node
     painter->setBrush(Qt::darkGray);
-    painter->drawEllipse(-7, -7, 20, 20);
+    painter->drawEllipse(-17, -17, 40, 40);
 
     // Create a radial gradient for color effect
-    QRadialGradient gradient(-3, -3, 10);
+    QRadialGradient gradient(-3, -3, 20);
 
     // Get the list of all nodes from the main window to find this node's index
     std::vector<Node*> nodes = parentWindow->nodes;
@@ -638,7 +638,7 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 
     // Draw the main outline of the node
     painter->setPen(QPen(Qt::black, 0));
-    painter->drawEllipse(-10, -10, 20, 20);
+    painter->drawEllipse(-20, -20, 40, 40);
 
     // Draw node ID number on top of the node
     QFont font = painter->font();
@@ -648,6 +648,7 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 }
 
 
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Constructor for the Edge class, initializes the edge between two nodes and sets its type
 Edge::Edge(Node *sourceNode, Node *destNode, unsigned int edgeType)
     : source(sourceNode), dest(destNode)
@@ -788,13 +789,14 @@ void MainWindow::evaluateParkingStatus(int nodeID)
 
                 // Update the checkbox state: checked = free, unchecked = occupied
                 switch (nodeID) {
-                    case 1: ui->park1->setChecked(!state.lastStableOccupied); break;
-                    case 2: ui->park2->setChecked(!state.lastStableOccupied); break;
-                    case 3: ui->park3->setChecked(!state.lastStableOccupied); break;
-                    case 4: ui->park4->setChecked(!state.lastStableOccupied); break;
-                    case 5: ui->park5->setChecked(!state.lastStableOccupied); break;
-                    case 6: ui->park6->setChecked(!state.lastStableOccupied); break;
-                    case 7: ui->park7->setChecked(!state.lastStableOccupied); break;
+                    case 0: ui->park1->setChecked(!state.lastStableOccupied); break;
+                    case 1: ui->park2->setChecked(!state.lastStableOccupied); break;
+                    case 2: ui->park3->setChecked(!state.lastStableOccupied); break;
+                    case 3: ui->park4->setChecked(!state.lastStableOccupied); break;
+                    case 4: ui->park5->setChecked(!state.lastStableOccupied); break;
+                    case 5: ui->park6->setChecked(!state.lastStableOccupied); break;
+                    case 6: ui->park7->setChecked(!state.lastStableOccupied); break;
+                    case 7: ui->park8->setChecked(!state.lastStableOccupied); break;
                 }
 
                 // Log the new confirmed parking state

@@ -840,7 +840,7 @@
      <string notr="true">background-color: rgb(255, 255, 255)</string>
     </property>
     <property name="title">
-     <string>Parking Slot 7</string>
+     <string>Parking Slot 8</string>
     </property>
     <widget class="QLabel" name="label_29">
      <property name="geometry">

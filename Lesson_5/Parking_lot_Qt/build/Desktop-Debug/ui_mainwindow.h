@@ -90,6 +90,13 @@ public:
     QLCDNumber *value_distance_7;
     QCheckBox *park7;
     QCheckBox *work7;
+    QGroupBox *slot_8;
+    QLabel *label_29;
+    QLCDNumber *value_light_9;
+    QLabel *label_30;
+    QLCDNumber *value_distance_9;
+    QCheckBox *park8;
+    QCheckBox *work8;
     QMenuBar *menuBar;
     QMenu *menuParking_Monitor;
     QToolBar *mainToolBar;
@@ -316,6 +323,32 @@ public:
         work7->setObjectName(QString::fromUtf8("work7"));
         work7->setGeometry(QRect(50, 120, 121, 24));
         work7->setFocusPolicy(Qt::NoFocus);
+        slot_8 = new QGroupBox(centralWidget);
+        slot_8->setObjectName(QString::fromUtf8("slot_8"));
+        slot_8->setGeometry(QRect(690, 590, 191, 151));
+        slot_8->setStyleSheet(QString::fromUtf8("background-color: rgb(255, 255, 255)"));
+        label_29 = new QLabel(slot_8);
+        label_29->setObjectName(QString::fromUtf8("label_29"));
+        label_29->setGeometry(QRect(0, 30, 81, 18));
+        value_light_9 = new QLCDNumber(slot_8);
+        value_light_9->setObjectName(QString::fromUtf8("value_light_9"));
+        value_light_9->setGeometry(QRect(110, 30, 64, 23));
+        value_light_9->setStyleSheet(QString::fromUtf8("border: 1px solid black"));
+        label_30 = new QLabel(slot_8);
+        label_30->setObjectName(QString::fromUtf8("label_30"));
+        label_30->setGeometry(QRect(0, 60, 111, 18));
+        value_distance_9 = new QLCDNumber(slot_8);
+        value_distance_9->setObjectName(QString::fromUtf8("value_distance_9"));
+        value_distance_9->setGeometry(QRect(110, 60, 64, 23));
+        value_distance_9->setStyleSheet(QString::fromUtf8("border: 1px solid black"));
+        park8 = new QCheckBox(slot_8);
+        park8->setObjectName(QString::fromUtf8("park8"));
+        park8->setGeometry(QRect(50, 90, 121, 24));
+        park8->setFocusPolicy(Qt::NoFocus);
+        work8 = new QCheckBox(slot_8);
+        work8->setObjectName(QString::fromUtf8("work8"));
+        work8->setGeometry(QRect(50, 120, 121, 24));
+        work8->setFocusPolicy(Qt::NoFocus);
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
@@ -380,6 +413,11 @@ public:
         label_26->setText(QCoreApplication::translate("MainWindow", "Distance sensor", nullptr));
         park7->setText(QCoreApplication::translate("MainWindow", "Spot available", nullptr));
         work7->setText(QCoreApplication::translate("MainWindow", "Node working", nullptr));
+        slot_8->setTitle(QCoreApplication::translate("MainWindow", "Parking Slot 8", nullptr));
+        label_29->setText(QCoreApplication::translate("MainWindow", "Light sensor", nullptr));
+        label_30->setText(QCoreApplication::translate("MainWindow", "Distance sensor", nullptr));
+        park8->setText(QCoreApplication::translate("MainWindow", "Spot available", nullptr));
+        work8->setText(QCoreApplication::translate("MainWindow", "Node working", nullptr));
         menuParking_Monitor->setTitle(QCoreApplication::translate("MainWindow", "Parking Monitor", nullptr));
     } // retranslateUi
 
