@@ -287,16 +287,27 @@ void group_selection(const unsigned char num_cluster, const unsigned char* clust
         }
     }
 
+    unsigned if_head[dim];
+    memset(if_head, 0, dim*sizeof(unsigned));
+    for(int i=0; i<dim; i++) {
+        for (int j=0; j<num_cluster; j++) {
+            if (i == cluster[j]) {
+                if_head[i] = 1;
+                break;
+            }
+        }
+    }
+
     for(int k=1; k<=num_cluster; k++) {
         for(int i=0; i<dim; i++) {
             float head_value[num_cluster];
             memset(head_value, 0, sizeof(float)*num_cluster);
             for (int j=0; j<num_cluster; j++) {
-                if (matrix_hop1[i + dim*cluster[j]]*k == connection_summary[i] && connection_summary[i] != 0) {
+                if (matrix_hop1[i + dim*cluster[j]]*k == connection_summary[i] && connection_summary[i] != 0 && if_head[i] == 0) {
                     head_value[j] = battery[cluster[j]]/(num_allocated(node_allocation[j], dim)+1)/(float)head_2_master_cost[j];
                 }
             }
-            if (connection_summary[i] == k) {
+            if (connection_summary[i] == k && if_head[i] == 0) {
                 node_allocation[greatest_value_index(head_value, num_cluster)][i] = 1;
             }
         }
@@ -340,6 +351,9 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
     unsigned char hop1[dim*dim];
     hop_matrix(adjacent, hop1, dim, 1);
     unsigned char connection_summary[dim];
+    memset(connection_summary, 0, dim*sizeof(unsigned char));
+    unsigned char can_2_master[dim];
+    memset(can_2_master, 0, dim*sizeof(unsigned char));
     for (int i=0; i<dim; i++) {
         for (int j=0; j<num_head; j++) {
             connection_summary[i] += head_sub_node[i + dim*j];
@@ -349,6 +363,7 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
     for (int i=0; i<num_head; i++) {
         if (master[head[i]] == 1) {
             printf("Newlink %d -> 255\r\n", head[i]);
+            can_2_master[head[i]] = 1;
         }
         else {
             float battery_temp = 0, hop_weight;
@@ -363,8 +378,10 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
                     }
                 }
             }
-            if (next != 254)
+            if (next != 254){
                 printf("Newlink %d -> %d\r\n", head[i], next);
+                can_2_master[head[i]] = 1;
+            }
         }
     }
     // second sent sub-node id
@@ -372,6 +389,7 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
         for (int j=0; j<dim; j++) {
             if (head_sub_node[i*dim + j] != 0) {
                 printf("Newlink %d -> %d\r\n",  j, head[i]);
+                can_2_master[j] = 1;
             }
         }
     }
@@ -384,7 +402,6 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
                 if(head[j] == i) flag = 0;
             }
             if (flag) {
-                // printf("i and head, %d, %d\n\r", i, head[j]);
                 unconnected_index[index][0] = i;
                 index += 1;
             }
@@ -392,9 +409,19 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
     }
     for (int i=0; i<dim; i++) {
         if (unconnected_index[i][0] != 255) {
+            float temp_criteria = 0, temp_weight;
             for (int j=0; j<dim; j++) {
                 if (hop1[unconnected_index[i][0]*dim + j] != 0) {
-                    unconnected_index[i][1] = j;
+                    if (can_2_master[j] == 1) {
+                        temp_weight = 2;
+                    }else {
+                        temp_weight = 0.5f;
+                    }
+                    if (temp_criteria < battery[j] * temp_weight) {
+                        temp_criteria = battery[j] * temp_weight;
+                        unconnected_index[i][1] = j;
+                        can_2_master[unconnected_index[i][0]] = 1;
+                    }
                 }
             }
         }
