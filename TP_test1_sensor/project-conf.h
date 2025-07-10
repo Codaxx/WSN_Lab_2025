@@ -19,8 +19,7 @@
 
 
 // logging level
-#define LOG_LEVEL LOG_LEVEL_INFO
-#define LOG_MODULE "LEACH"
+
 
 
 // Hello Process Parameters for system 

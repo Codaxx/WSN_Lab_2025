@@ -1,3 +1,7 @@
+#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_MODULE "LEACH"
+
+
 #include "contiki.h"
 #include "net/nullnet/nullnet.h"
 #include "net/packetbuf.h"
@@ -389,7 +393,9 @@ static void HELLO_Callback(const void *data, uint16_t len,
 }
 
 PROCESS(hello_process, "HELLO Flooding Process");
-AUTOSTART_PROCESSES(&hello_process);
+PROCESS(dummy_process, "Hello Dummy Process");
+
+AUTOSTART_PROCESSES(&hello_process, &dummy_process);
 PROCESS_THREAD(hello_process, ev, data) {
   PROCESS_BEGIN();
   NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,GROUP_CHANNEL);
@@ -445,3 +451,15 @@ PROCESS_THREAD(hello_process, ev, data) {
 }
 
 
+PROCESS_THREAD(dummy_process, ev, data)
+{
+  PROCESS_BEGIN();
+
+  LOG_INFO("Fuck You, Contiki-NG! Process started.\n");
+
+  while(1) {
+    PROCESS_WAIT_EVENT();
+  }
+
+  PROCESS_END();
+}
