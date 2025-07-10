@@ -137,6 +137,7 @@ public:
     QLabel *label_36;
     QLabel *label_37;
     QLabel *label_38;
+    QPushButton *pushButton_reset;
     QMenuBar *menuBar;
     QMenu *menuParking_Monitor;
     QToolBar *mainToolBar;
@@ -531,6 +532,9 @@ public:
         label_38 = new QLabel(slot_8);
         label_38->setObjectName(QString::fromUtf8("label_38"));
         label_38->setGeometry(QRect(170, 95, 16, 18));
+        pushButton_reset = new QPushButton(centralWidget);
+        pushButton_reset->setObjectName(QString::fromUtf8("pushButton_reset"));
+        pushButton_reset->setGeometry(QRect(390, 0, 75, 27));
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
@@ -632,6 +636,7 @@ public:
         label_36->setText(QCoreApplication::translate("MainWindow", "lux", nullptr));
         label_37->setText(QCoreApplication::translate("MainWindow", "cm", nullptr));
         label_38->setText(QCoreApplication::translate("MainWindow", "%", nullptr));
+        pushButton_reset->setText(QCoreApplication::translate("MainWindow", "Reset", nullptr));
         menuParking_Monitor->setTitle(QCoreApplication::translate("MainWindow", "Parking Monitor", nullptr));
     } // retranslateUi
 
