@@ -30,8 +30,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // Collect all checkboxes into a vector
     QVector<QCheckBox *> checkboxes = {
-        ui->park1, ui->park2, ui->park3, ui->park4, ui->park5, ui->park6, ui->park7,
-        ui->work1, ui->work2, ui->work3, ui->work4, ui->work5, ui->work6, ui->work7
+        ui->park1, ui->park2, ui->park3, ui->park4, ui->park5, ui->park6, ui->park7, ui->park8,
+        ui->work1, ui->work2, ui->work3, ui->work4, ui->work5, ui->work6, ui->work7, ui->work8
     };
 
     // Disable mouse click for each checkbox
@@ -167,6 +167,20 @@ void MainWindow::receive() {
                         case 6: ui->work7->setChecked(true); break;
                         case 7: ui->work8->setChecked(true); break;
                     }
+
+                    int battery = list.at(i+7).toInt();
+                    switch (nodeID) {
+                    case 0: ui->battery1->display(battery); break;
+                    case 1: ui->battery2->display(battery); break;
+                    case 2: ui->battery3->display(battery); break;
+                    case 3: ui->battery4->display(battery); break;
+                    case 4: ui->battery5->display(battery); break;
+                    case 5: ui->battery6->display(battery); break;
+                    case 6: ui->battery7->display(battery); break;
+                    case 7: ui->battery8->display(battery); break;
+                    }
+                    qDebug() << "Battery level: " << QString::number(battery);
+
                     double value = list.at(i+5).toInt();
                     qDebug() << "List size " << list.size();
                     qDebug() << "List value "<< i <<" "<< list.at(i);
@@ -175,31 +189,31 @@ void MainWindow::receive() {
                         case 1:
                             nodeStates[nodeID].light = value;
                             switch (nodeID) {
-                                case 0: ui->value_light_1->display(value); break;
-                                case 1: ui->value_light_2->display(value); break;
-                                case 2: ui->value_light_3->display(value); break;
-                                case 3: ui->value_light_4->display(value); break;
-                                case 4: ui->value_light_5->display(value); break;
-                                case 5: ui->value_light_6->display(value); break;
-                                case 6: ui->value_light_7->display(value); break;
-                                case 7: ui->value_light_9->display(value); break;
+                                case 0: ui->value_light1->display(value); break;
+                                case 1: ui->value_light2->display(value); break;
+                                case 2: ui->value_light3->display(value); break;
+                                case 3: ui->value_light4->display(value); break;
+                                case 4: ui->value_light5->display(value); break;
+                                case 5: ui->value_light6->display(value); break;
+                                case 6: ui->value_light7->display(value); break;
+                                case 7: ui->value_light8->display(value); break;
                             }
-                            qDebug() << "Val light" << QString::number(value);
+                            qDebug() << "Light sensor value: " << QString::number(value);
                             break;
                         //Distance sensor
                         case 2:
                             nodeStates[nodeID].distance = value;
                             switch (nodeID) {
-                                case 0: ui->value_distance_1->display(value); break;
-                                case 1: ui->value_distance_2->display(value); break;
-                                case 2: ui->value_distance_3->display(value); break;
-                                case 3: ui->value_distance_4->display(value); break;
-                                case 4: ui->value_distance_5->display(value); break;
-                                case 5: ui->value_distance_6->display(value); break;
-                                case 6: ui->value_distance_7->display(value); break;
-                                case 7: ui->value_distance_9->display(value); break;
+                                case 0: ui->value_distance1->display(value); break;
+                                case 1: ui->value_distance2->display(value); break;
+                                case 2: ui->value_distance3->display(value); break;
+                                case 3: ui->value_distance4->display(value); break;
+                                case 4: ui->value_distance5->display(value); break;
+                                case 5: ui->value_distance6->display(value); break;
+                                case 6: ui->value_distance7->display(value); break;
+                                case 7: ui->value_distance8->display(value); break;
                             }
-                            qDebug() << "Val distance" << QString::number(value);
+                            qDebug() << "Distance sensor value: " << QString::number(value);
                             break;
                     }
                     evaluateParkingStatus(nodeID);
@@ -412,6 +426,57 @@ void MainWindow::send(QByteArray data) {
     qDebug() << "Sent" << bytesWritten << "bytes:" << data;
 }
 
+// Function to evaluate parking lot status with time-based smoothing
+void MainWindow::evaluateParkingStatus(int nodeID)
+{
+    auto &state = nodeStates[nodeID];  // Access the sensor readings and status tracking
+
+    // Determine the new parking status based on the current sensor values
+    bool newOccupied = (state.light < 100 && state.distance < 50);
+
+    // Only process if both sensors have valid data
+    if (state.light > 0 && state.distance > 0) {
+
+        // If the new reading differs from the last detected state, update the timestamp
+        if (newOccupied != state.currentOccupied) {
+            state.currentOccupied = newOccupied;
+            state.lastStatusChangeTime = QDateTime::currentDateTime();
+        }
+
+        // If the stable state hasn't been updated yet, check how long the new status has persisted
+        if (state.lastStableOccupied != state.currentOccupied) {
+            qint64 elapsed = state.lastStatusChangeTime.msecsTo(QDateTime::currentDateTime());
+
+            // Confirm the state change only if it has remained stable for more than 5 seconds
+            if (elapsed > 5000) {
+                state.lastStableOccupied = state.currentOccupied;
+
+                // Update the checkbox state: checked = free, unchecked = occupied
+                switch (nodeID) {
+                case 0: ui->park1->setChecked(!state.lastStableOccupied); break;
+                case 1: ui->park2->setChecked(!state.lastStableOccupied); break;
+                case 2: ui->park3->setChecked(!state.lastStableOccupied); break;
+                case 3: ui->park4->setChecked(!state.lastStableOccupied); break;
+                case 4: ui->park5->setChecked(!state.lastStableOccupied); break;
+                case 5: ui->park6->setChecked(!state.lastStableOccupied); break;
+                case 6: ui->park7->setChecked(!state.lastStableOccupied); break;
+                case 7: ui->park8->setChecked(!state.lastStableOccupied); break;
+                }
+
+                // Log the new confirmed parking state
+                if (state.lastStableOccupied) {
+                    ui->textEdit_Status->append(QString("Node %1: Car detected - spot occupied").arg(nodeID));
+                } else {
+                    ui->textEdit_Status->append(QString("Node %1: No car - spot available").arg(nodeID));
+                }
+
+                // Optionally refresh the graph box background
+                updateGraphBoxStyle();
+            }
+        }
+    }
+}
+
 // Set graphbox to green if parking is available and red if slot is not available or node is not working
 // Update the background color of each slot depending on the checkbox states
 void MainWindow::updateGraphBoxStyle() {
@@ -427,10 +492,10 @@ void MainWindow::updateGraphBoxStyle() {
             continue;
 
         // Determine the background color based on checkbox states
-        if (park->isChecked()) {
+        if (park->isChecked() && work->isChecked()) {
             // If the parking sensor detects a car, set to green
             slot->setStyleSheet("QGroupBox { background-color: lightgreen; }");
-        } else if (!work->isChecked()) {
+        } else if (!park->isChecked() && work->isChecked()) {
             // If the work sensor is NOT connected, set to red
             slot->setStyleSheet("QGroupBox { background-color: lightcoral; }");
         } else {
@@ -438,6 +503,16 @@ void MainWindow::updateGraphBoxStyle() {
             slot->setStyleSheet("");
         }
     }
+}
+
+
+void MainWindow::on_pushButtonSetPower_clicked()
+{
+    QByteArray data = QByteArray((int) 6, (char) 0);
+    data.insert(0, "cmd:");
+    data[4] = SERIAL_PACKET_TYPE_CONFIGURE_TEST;
+    data[5] = (signed char) ui->spinBoxPower->value();
+    this->send(data);
 }
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -761,65 +836,4 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
     painter->drawPolygon(QPolygonF() << line.p2() << destArrowP1 << destArrowP2);
 }
 
-
-// Function to evaluate parking lot status with time-based smoothing
-void MainWindow::evaluateParkingStatus(int nodeID)
-{
-    auto &state = nodeStates[nodeID];  // Access the sensor readings and status tracking
-
-    // Determine the new parking status based on the current sensor values
-    bool newOccupied = (state.light < 20 && state.distance < 30);
-
-    // Only process if both sensors have valid data
-    if (state.light >= 0 && state.distance >= 0) {
-
-        // If the new reading differs from the last detected state, update the timestamp
-        if (newOccupied != state.currentOccupied) {
-            state.currentOccupied = newOccupied;
-            state.lastStatusChangeTime = QDateTime::currentDateTime();
-        }
-
-        // If the stable state hasn't been updated yet, check how long the new status has persisted
-        if (state.lastStableOccupied != state.currentOccupied) {
-            qint64 elapsed = state.lastStatusChangeTime.msecsTo(QDateTime::currentDateTime());
-
-            // Confirm the state change only if it has remained stable for more than 5 seconds
-            if (elapsed > 5000) {
-                state.lastStableOccupied = state.currentOccupied;
-
-                // Update the checkbox state: checked = free, unchecked = occupied
-                switch (nodeID) {
-                    case 0: ui->park1->setChecked(!state.lastStableOccupied); break;
-                    case 1: ui->park2->setChecked(!state.lastStableOccupied); break;
-                    case 2: ui->park3->setChecked(!state.lastStableOccupied); break;
-                    case 3: ui->park4->setChecked(!state.lastStableOccupied); break;
-                    case 4: ui->park5->setChecked(!state.lastStableOccupied); break;
-                    case 5: ui->park6->setChecked(!state.lastStableOccupied); break;
-                    case 6: ui->park7->setChecked(!state.lastStableOccupied); break;
-                    case 7: ui->park8->setChecked(!state.lastStableOccupied); break;
-                }
-
-                // Log the new confirmed parking state
-                if (state.lastStableOccupied) {
-                    ui->textEdit_Status->append(QString("Node %1: Car detected - spot occupied").arg(nodeID));
-                } else {
-                    ui->textEdit_Status->append(QString("Node %1: No car - spot available").arg(nodeID));
-                }
-
-                // Optionally refresh the graph box background
-                updateGraphBoxStyle();
-            }
-        }
-    }
-}
-
-
-void MainWindow::on_pushButtonSetPower_clicked()
-{
-    QByteArray data = QByteArray((int) 6, (char) 0);
-    data.insert(0, "cmd:");
-    data[4] = SERIAL_PACKET_TYPE_CONFIGURE_TEST;
-    data[5] = (signed char) ui->spinBoxPower->value();
-    this->send(data);
-}
 

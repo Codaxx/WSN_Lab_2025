@@ -58,8 +58,8 @@ private:
         double light = -1;
         double distance = -1;
 
-        bool currentOccupied = false;       // current state
-        bool lastStableOccupied = false;    // last stable state
+        bool currentOccupied = true;       // current state
+        bool lastStableOccupied = true;    // last stable state
         QDateTime lastStatusChangeTime;     // last status change time
     };
 
