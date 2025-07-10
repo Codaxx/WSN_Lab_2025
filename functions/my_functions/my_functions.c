@@ -470,7 +470,7 @@ void extract_matrix(const unsigned char* org_adjacent, const unsigned char dim, 
     }
 }
 
-void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table) {
+void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table, unsigned char* head_list) {
     // data transform
     const unsigned char low_dim = dim-1;
     unsigned char temp_adjacent[dim*dim];
@@ -510,12 +510,14 @@ void from_rssi_to_link(const short* rssi, const float* battery, const unsigned c
             used_rssi[(i-1)*low_dim+j-1] = rssi[i*dim+j];
         }
     }
-    printf("-------------------------------\n");
+    // printf("-------------------------------\n");
     // select head
     unsigned char temp_head_index[3]={0};
+    printf("ClusterHead: ");
     cluster_head_choose(adjacent, 3, low_dim, master, battery, used_rssi, temp_head_index);
     for (int i=0;i<3;i++) {
         printf("%d ",temp_head_index[i]);
+        head_list[i] = temp_head_index[i];
     }
     printf("\n\r");
     unsigned char temp_head_allocate_node[3*low_dim];
