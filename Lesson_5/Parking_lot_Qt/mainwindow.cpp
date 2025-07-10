@@ -738,33 +738,56 @@ void Edge::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 }
 
 
-//Function to evaluate parking lot status
+// Function to evaluate parking lot status with time-based smoothing
 void MainWindow::evaluateParkingStatus(int nodeID)
 {
-    const auto &state = nodeStates[nodeID];
+    auto &state = nodeStates[nodeID];  // Access the sensor readings and status tracking
 
+    // Determine the new parking status based on the current sensor values
+    bool newOccupied = (state.light < 20 && state.distance < 30);
+
+    // Only process if both sensors have valid data
     if (state.light >= 0 && state.distance >= 0) {
-        bool occupied = (state.light < 20 && state.distance < 30);
 
-        // Switch to select the correct checkbox
-        switch (nodeID) {
-            case 1: ui->park1->setChecked(!occupied); break;
-            case 2: ui->park2->setChecked(!occupied); break;
-            case 3: ui->park3->setChecked(!occupied); break;
-            case 4: ui->park4->setChecked(!occupied); break;
-            case 5: ui->park5->setChecked(!occupied); break;
-            case 6: ui->park6->setChecked(!occupied); break;
-            case 7: ui->park7->setChecked(!occupied); break;
+        // If the new reading differs from the last detected state, update the timestamp
+        if (newOccupied != state.currentOccupied) {
+            state.currentOccupied = newOccupied;
+            state.lastStatusChangeTime = QDateTime::currentDateTime();
         }
 
-        // Write to text log
-        if (occupied) {
-            ui->textEdit_Status->append(QString("Node %1: Car detected - spot occupied").arg(nodeID));
-        } else {
-            ui->textEdit_Status->append(QString("Node %1: No car - spot available").arg(nodeID));
+        // If the stable state hasn't been updated yet, check how long the new status has persisted
+        if (state.lastStableOccupied != state.currentOccupied) {
+            qint64 elapsed = state.lastStatusChangeTime.msecsTo(QDateTime::currentDateTime());
+
+            // Confirm the state change only if it has remained stable for more than 5 seconds
+            if (elapsed > 5000) {
+                state.lastStableOccupied = state.currentOccupied;
+
+                // Update the checkbox state: checked = free, unchecked = occupied
+                switch (nodeID) {
+                    case 1: ui->park1->setChecked(!state.lastStableOccupied); break;
+                    case 2: ui->park2->setChecked(!state.lastStableOccupied); break;
+                    case 3: ui->park3->setChecked(!state.lastStableOccupied); break;
+                    case 4: ui->park4->setChecked(!state.lastStableOccupied); break;
+                    case 5: ui->park5->setChecked(!state.lastStableOccupied); break;
+                    case 6: ui->park6->setChecked(!state.lastStableOccupied); break;
+                    case 7: ui->park7->setChecked(!state.lastStableOccupied); break;
+                }
+
+                // Log the new confirmed parking state
+                if (state.lastStableOccupied) {
+                    ui->textEdit_Status->append(QString("Node %1: Car detected - spot occupied").arg(nodeID));
+                } else {
+                    ui->textEdit_Status->append(QString("Node %1: No car - spot available").arg(nodeID));
+                }
+
+                // Optionally refresh the graph box background
+                updateGraphBoxStyle();
+            }
         }
     }
 }
+
 
 void MainWindow::on_pushButtonSetPower_clicked()
 {

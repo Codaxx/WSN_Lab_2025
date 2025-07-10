@@ -55,6 +55,10 @@ private:
     struct SensorState {
         double light = -1;
         double distance = -1;
+
+        bool currentOccupied = false;       // current state
+        bool lastStableOccupied = false;    // last stable state
+        QDateTime lastStatusChangeTime;     // last status change time
     };
 
     QMap<int, SensorState> nodeStates;
