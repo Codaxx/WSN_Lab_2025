@@ -158,7 +158,8 @@ PROCESS_THREAD(sensor_reader, ev, data){
 			0,0,-50,0,-47,-45,0,0};
 		const float battery[7] = {0.8f, 0.7f, 1.0f, 0.9f, 0.8f, 0.6f, 0.8f};
 		unsigned char link_table[8][8] = {0};
-		from_rssi_to_link(rssi, battery, 8, (uint8_t*)link_table);
+		unsigned char head_list[3] = {0};
+		from_rssi_to_link(rssi, battery, 8, (uint8_t*)link_table, head_list);
 		for (int i=0;i<8;i++) {
 			for (int j=0;j<8;j++) {
 				printf("%d ",link_table[i][j]);
@@ -166,6 +167,11 @@ PROCESS_THREAD(sensor_reader, ev, data){
 			printf("\n");
 		}
 		printf("===================================================\n\r");
+		for(int i=0;i<3;i++){
+			printf("%d ", head_list[i]);
+		}
+		printf("\n\r");
+		printf("++++++++++++++++++++++++++++++++++++++++++++++++++++\n\r");
 		
 		// route_ready = READY;
 
