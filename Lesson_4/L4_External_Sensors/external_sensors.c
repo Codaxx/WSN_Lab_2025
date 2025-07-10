@@ -41,10 +41,6 @@
 #include <stdio.h>      // For printf.
 #include <string.h>
 
-
-//Code for joystick implementation 
-
-
 // Reading frequency in seconds.
 #define TEMP_READ_INTERVAL CLOCK_SECOND*1
 #define HIGH_THRESHOLD  3500
@@ -68,6 +64,9 @@ static void broadcast_recv(const void *data, uint16_t len, const linkaddr_t *src
 
 	leds_single_off(LEDS_LED2);
 }
+
+
+//Code for joystick implementation 
 
 PROCESS(joystick_detect, "process that detects position of joystick");
 AUTOSTART_PROCESSES(&joystick_detect);
