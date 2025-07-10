@@ -93,7 +93,11 @@ build/nrf52840/dk/obj/simple_packet.o: simple_packet.c \
  /home/go49jan/contiki-ng/os/sys/log.h \
  /home/go49jan/contiki-ng/os/sys/log-conf.h \
  /home/go49jan/contiki-ng/os/lib/list.h \
- /home/go49jan/contiki-ng/os/lib/memb.h packet_structure.h project-conf.h
+ /home/go49jan/contiki-ng/os/lib/memb.h \
+ /home/go49jan/contiki-ng/arch/platform/nrf52840/./common/saadc-sensor.h \
+ /home/go49jan/contiki-ng/os/lib/sensors.h \
+ /home/go49jan/contiki-ng/arch/platform/nrf52840/./common/temperature-sensor.h \
+ my_sensor.h packet_structure.h project-conf.h
 
 /home/go49jan/contiki-ng/os/contiki.h:
 
@@ -284,6 +288,14 @@ project-conf.h:
 /home/go49jan/contiki-ng/os/lib/list.h:
 
 /home/go49jan/contiki-ng/os/lib/memb.h:
+
+/home/go49jan/contiki-ng/arch/platform/nrf52840/./common/saadc-sensor.h:
+
+/home/go49jan/contiki-ng/os/lib/sensors.h:
+
+/home/go49jan/contiki-ng/arch/platform/nrf52840/./common/temperature-sensor.h:
+
+my_sensor.h:
 
 packet_structure.h:
 

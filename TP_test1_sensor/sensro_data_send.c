@@ -65,7 +65,7 @@ void temperture_av_cal(){
 	temperature_av_0 /= BUFFER_SIZE;
 }
 
-void recv_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest){
+void SENSOR_PACKET_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest){
 
 	return;
 	memcpy(&recv_message, (sensor_data*)data, sizeof(recv_message));
@@ -92,7 +92,7 @@ PROCESS_THREAD(sensor_reader, ev, data){
 	PROCESS_BEGIN();
 	etimer_set(&sensor_reading_timer, CLOCK_SECOND*3);
 	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 12);
-	nullnet_set_input_callback(&recv_callback);
+	nullnet_set_input_callback(&SENSOR_PACKET_callback);
 
 	while(1){
 		PROCESS_WAIT_EVENT();

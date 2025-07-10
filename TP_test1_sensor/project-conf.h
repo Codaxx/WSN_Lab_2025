@@ -18,9 +18,12 @@
 
 
 
-// logging level
 
-
+// Sensor 
+#define BUFFER_SIZE	3
+#define DIS_THRES	20
+#define	LIGHT_THRES	500
+#define	TEM_THRES	10
 
 // Hello Process Parameters for system 
 #define HELLO_INTERVAL 5
@@ -40,7 +43,7 @@
 
 /* ==== UNICAST MESSAGE TYPES  ====*/
 #define RT_REPORT_PACKET 2
-
+#define SENSOR_DATA_PACKET 3
 
 
 #endif /* PROJECT_CONF_H_ */

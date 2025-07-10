@@ -17,7 +17,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
+#include "common/saadc-sensor.h"		// Saadc to read Battery Sensor.
+#include "common/temperature-sensor.h"
+#include "my_sensor.h"
 #include "packet_structure.h"
 #include "project-conf.h"
 
@@ -27,12 +29,46 @@ static linkaddr_t addr_master;
 int8_t adjacency_matrix[MAX_NODES][MAX_NODES];  
 static linkaddr_t node_index_to_addr[MAX_NODES]; 
 static int num_known_nodes = 0;
+// sensor data transmission
+static uint8_t trans_flag;
+static int distance_buffer[BUFFER_SIZE], light_buffer[BUFFER_SIZE], temperature_buffer[BUFFER_SIZE];
+static int global_index;
+static int distance_av_0, light_av_0, temperature_av_0;
+static int distance_av_1, light_av_1, temperature_av_1;
+static sensor_data recv_message;
+
 
 LIST(local_rt_table);
 MEMB(rt_mem,rt_entry,MAX_NODES);
 
+//sensor data 
+void distance_av_cal(){
+	distance_av_1 = distance_av_0;
+	for(int i=0; i<BUFFER_SIZE; i++){
+		distance_av_0 += distance_buffer[i];
+	}
+	distance_av_0 /= BUFFER_SIZE;
+}
+
+void light_av_cal(){
+	light_av_1 = light_av_0;
+	for(int i=0; i<BUFFER_SIZE; i++){
+		light_av_0 += light_buffer[i];
+	}
+	light_av_0 /= BUFFER_SIZE;
+}
+
+void temperture_av_cal(){
+	temperature_av_1 = temperature_av_0;
+	for(int i=0; i<BUFFER_SIZE; i++){
+		temperature_av_0 += temperature_buffer[i];
+	}
+	temperature_av_0 /= BUFFER_SIZE;
+}
 
 
+
+// routing discovery part 
 rt_entry * check_local_rt(const linkaddr_t *addr)
 { 
   rt_entry *e= list_head(local_rt_table);
@@ -45,6 +81,7 @@ rt_entry * check_local_rt(const linkaddr_t *addr)
 	}
 	return e;
 }
+
 uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
   return ((uint16_t)addr->u8[LINKADDR_SIZE - 2] << 8) | addr->u8[LINKADDR_SIZE - 1];
 }
@@ -109,8 +146,6 @@ void print_local_routing_table() {
   LOG_INFO("+------------------+ ----------------------+--------------------+\n");
 }
 
-
-// Forward packet via broadcast
 void forward_hello(struct dio_packet *pkt)
 {
   nullnet_buf = (uint8_t *)pkt;
@@ -148,9 +183,6 @@ void patch_update_local_rt_table(const linkaddr_t *dst, const linkaddr_t *next,u
 
 
 }
-
-
-
 
 void print_rt_entries_pkt(const struct rt_entry_pkt *pkt)
 {
@@ -230,6 +262,11 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
   uint16_t dest_id = get_node_id_from_linkaddr(dest);
   printf("Sending packet to dest: %i\n", dest_id);
 }
+
+
+
+
+
 
 // Receive hello packet callback
 // 1.forward hello packet
@@ -370,6 +407,18 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
 
 }
 
+
+static void SENSOR_PACKET_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest){
+
+	memcpy(&recv_message, (sensor_data*)data, sizeof(recv_message));
+	if(recv_message.type == 3){
+		LOG_INFO("Received data are from %d:\n\r", get_node_id_from_linkaddr(&recv_message.source));
+		LOG_INFO("batttery: [%d](mV)", recv_message.battery);
+		LOG_INFO("temperature: [%d](C)", recv_message.temperature);
+		LOG_INFO("light: [%d](lux)", recv_message.light_lux);
+		LOG_INFO("distance: [%d](cm)", recv_message.distance);
+	}
+}
  
 static void HELLO_Callback(const void *data, uint16_t len,
                            const linkaddr_t *src, const linkaddr_t *dest)
@@ -384,6 +433,10 @@ static void HELLO_Callback(const void *data, uint16_t len,
       break;
     case RT_REPORT_PACKET:
       DAO_PACKET_callback(data, len, src, dest);
+      leds_single_off(LEDS_LED2);
+      break;
+    case SENSOR_DATA_PACKET:
+      SENSOR_PACKET_callback(data, len, src, dest);
       leds_single_off(LEDS_LED2);
       break;
     default:
@@ -453,13 +506,74 @@ PROCESS_THREAD(hello_process, ev, data) {
 
 PROCESS_THREAD(dummy_process, ev, data)
 {
+  static struct etimer sensor_reading_timer;
+	static int light_raw, distance_raw;
+	static int light_value, distance_value;
+	static int voltage, temperature;
+	static sensor_data packet;
   PROCESS_BEGIN();
-
+  etimer_set(&sensor_reading_timer, CLOCK_SECOND*3);
   LOG_INFO("Fuck You, Contiki-NG! Process started.\n");
 
-  while(1) {
-    PROCESS_WAIT_EVENT();
+
+  if(node_id == MASTER_NODE_ID) {
   }
+  else{
+    while(1) {
+      
+      PROCESS_WAIT_EVENT();
+      // read raw data from ADC
+      light_raw = saadc_sensor.value(P0_30);
+      distance_raw = saadc_sensor.value(P0_31);
+      
+      // get sensor data
+      light_value = get_light_lux(light_raw);
+      distance_value = get_distance(distance_raw);
+      voltage = get_millivolts(saadc_sensor.value(BATTERY_SENSOR));
+      temperature = temperature_sensor.value(0)/4;
+
+      distance_buffer[global_index] = distance_value;
+      light_buffer[global_index] = light_value;
+      temperature_buffer[global_index] = temperature;
+      global_index ++;
+      if(global_index>=BUFFER_SIZE){
+        distance_av_cal();
+        light_av_cal();
+        temperture_av_cal();
+        global_index = 0;
+        trans_flag = 1;
+      }
+      if(ABS(distance_av_1-distance_av_0) >= DIS_THRES && ABS(light_av_1-light_av_0) >= LIGHT_THRES){
+        trans_flag = 1;
+      }
+      // assign data to packet;
+      if(trans_flag){
+        packet.type = 3;
+        linkaddr_copy(&packet.source, &linkaddr_node_addr);
+        packet.light_lux = light_av_0;
+        packet.distance = distance_av_0;
+        packet.battery = voltage;
+        packet.temperature = temperature;
+
+        // transmit data to master
+        const linkaddr_t *next_hop = get_next_hop_to(&addr_master);
+        if(next_hop != NULL) {
+          nullnet_buf = (uint8_t *)&packet;
+          nullnet_len = sizeof(packet);
+          NETSTACK_NETWORK.output(next_hop);
+          LOG_INFO("Sent sensor data to master. Temp=%i, Distance=%i, Battery=%i, Light_Lux%i\n",
+            packet.temperature,packet.distance,packet.battery,packet.light_lux );
+        } else {
+          LOG_WARN("No route to master!\n");
+        }
+
+        trans_flag = 0;
+      }  
+      etimer_reset(&sensor_reading_timer);
+    }
+   
+  }
+  
 
   PROCESS_END();
 }
