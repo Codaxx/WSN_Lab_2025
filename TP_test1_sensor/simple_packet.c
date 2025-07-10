@@ -20,15 +20,17 @@
 #include "common/saadc-sensor.h"		// Saadc to read Battery Sensor.
 #include "common/temperature-sensor.h"
 #include "my_sensor.h"
+#include "my_functions.h"
 #include "packet_structure.h"
 #include "project-conf.h"
 
 // used for recording the packet seq, prevent loop
 static uint16_t last_seq_id = 0;
 static linkaddr_t addr_master;
-int8_t adjacency_matrix[MAX_NODES][MAX_NODES];  
+static short adjacency_matrix[MAX_NODES][MAX_NODES];  
 static linkaddr_t node_index_to_addr[MAX_NODES]; 
 static int num_known_nodes = 0;
+
 // sensor data transmission
 static uint8_t trans_flag;
 static int distance_buffer[BUFFER_SIZE], light_buffer[BUFFER_SIZE], temperature_buffer[BUFFER_SIZE];
@@ -65,8 +67,6 @@ void temperture_av_cal(){
 	}
 	temperature_av_0 /= BUFFER_SIZE;
 }
-
-
 
 // routing discovery part 
 rt_entry * check_local_rt(const linkaddr_t *addr)
@@ -264,10 +264,6 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
 }
 
 
-
-
-
-
 // Receive hello packet callback
 // 1.forward hello packet
 // 2.reply to the src node
@@ -337,18 +333,7 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
   LOG_INFO("-------dao packet size-%u--------------",sizeof(struct rt_entry_pkt));
   
   int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
-  rt_entry* e = check_local_rt(&pkt->src);
-    if (e == NULL)
-    {
-      update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
-      LOG_INFO("Discover new nodes adding to the rt table:\n");
-    }
-    else if (abs(e->metric - pkt->rt_metric) > 5)   
-    {
-      LOG_INFO("Update rt table with new metric:\n");
-      e->metric = pkt->rt_metric;
-    }
-
+  patch_update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
 
 
   //update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
@@ -376,17 +361,7 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
     }
     // go through the routing report rt_table, update the local rt table
     // note that next hop would be the packet src 
-    rt_entry* e = check_local_rt(&pkt->rt_dest);
-    if (e == NULL)
-    {
-      update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop,pkt->rt_metric,pkt->rt_seq_no);
-      LOG_INFO("Discover new nodes adding to the rt table:\n");
-    }
-    else if (abs(e->metric - pkt->rt_metric) > 5)   
-    {
-      LOG_INFO("Update rt table with new metric:\n");
-      e->metric = pkt->rt_metric;
-    }
+    patch_update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop,pkt->rt_metric,pkt->rt_seq_no);
     print_local_routing_table();
     print_adjacency_matrix();
     leds_single_off(LEDS_LED2);
@@ -407,8 +382,8 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
 
 }
 
-
-static void SENSOR_PACKET_callback(const void *data, uint16_t len, const linkaddr_t *src, const linkaddr_t *dest){
+static void SENSOR_PACKET_callback(const void *data, uint16_t len, 
+                            const linkaddr_t *src, const linkaddr_t *dest){
 
 	memcpy(&recv_message, (sensor_data*)data, sizeof(recv_message));
 	if(recv_message.type == 3){
@@ -445,17 +420,21 @@ static void HELLO_Callback(const void *data, uint16_t len,
   }
 }
 
-PROCESS(hello_process, "HELLO Flooding Process");
-PROCESS(dummy_process, "Hello Dummy Process");
 
-AUTOSTART_PROCESSES(&hello_process, &dummy_process);
+
+PROCESS(hello_process, "HELLO Flooding Process");
+PROCESS(sensro_report_process, "Hello Dummy Process");
+PROCESS(choose_ch_process, "choosing CH Process");
+
+AUTOSTART_PROCESSES(&hello_process, &sensro_report_process,&choose_ch_process);
 PROCESS_THREAD(hello_process, ev, data) {
   PROCESS_BEGIN();
+  LOG_INFO("HELLP PROCESS BEGIN\n");
   NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,GROUP_CHANNEL);
   radio_value_t channel;
   NETSTACK_CONF_RADIO.get_value(RADIO_PARAM_CHANNEL, &channel);
   LOG_INFO("Radio channel set to %u\r\n", channel);
-
+  get_index_from_addr(&linkaddr_node_addr);
   //initiation the adjacency_matrix
   for (int i = 0; i < MAX_NODES; i++)
   {
@@ -467,7 +446,7 @@ PROCESS_THREAD(hello_process, ev, data) {
       }
       else
       {
-        adjacency_matrix[i][j] = -1;  
+        adjacency_matrix[i][j] = 0;  
       }
     }
   }
@@ -503,8 +482,7 @@ PROCESS_THREAD(hello_process, ev, data) {
   PROCESS_END();
 }
 
-
-PROCESS_THREAD(dummy_process, ev, data)
+PROCESS_THREAD(sensro_report_process, ev, data)
 {
   static struct etimer sensor_reading_timer;
 	static int light_raw, distance_raw;
@@ -513,8 +491,6 @@ PROCESS_THREAD(dummy_process, ev, data)
 	static sensor_data packet;
   PROCESS_BEGIN();
   etimer_set(&sensor_reading_timer, CLOCK_SECOND*3);
-  LOG_INFO("Fuck You, Contiki-NG! Process started.\n");
-
 
   if(node_id == MASTER_NODE_ID) {
   }
@@ -576,4 +552,40 @@ PROCESS_THREAD(dummy_process, ev, data)
   
 
   PROCESS_END();
+}
+const float battery[MASTER_NODE_ID] = {0.8f,0.9f, 0.7f, 1.0f, 0.9f, 0.8f, 0.6f, 0.8f,0.3f,0.6f};
+PROCESS_THREAD(choose_ch_process, ev, data){
+	static struct etimer choose_timer;
+  PROCESS_BEGIN();
+  etimer_set(&choose_timer, CLOCK_SECOND*3);
+	while(1){
+		PROCESS_WAIT_EVENT();
+		// code to test head chosen algorithm
+		/*const short rssi[] = {
+			0,-60,0,0,-30,-40,0,0,
+			-60,0,0,-50,-30,0,-73,0,
+			0,0,0,0,-50,-50,0,-50,
+			0,-50,0,0,0,-40,-47,0,
+			-30,-30,-50,0,0,0,-30,-47,
+			-40,0,-50,-30,0,0,0,-45,
+			0,-73,0,-47,-39,0,0,0,
+			0,0,-50,0,-47,-45,0,0};*/
+
+    unsigned char head_list[3] ={0};
+    short* rssi = (short*)adjacency_matrix;
+		unsigned char link_table[MAX_NODES][MAX_NODES] = {0};
+		from_rssi_to_link(rssi, battery, MAX_NODES, (uint8_t*)link_table,head_list);
+		for (int i=0;i<MAX_NODES;i++) {
+			for (int j=0;j<MAX_NODES;j++) {
+				printf("%d ",link_table[i][j]);
+			}
+			printf("\n");
+		}
+		printf("===================================================\n\r");
+		etimer_reset(&choose_timer);
+		// route_ready = READY;
+
+	}
+
+	PROCESS_END();
 }
