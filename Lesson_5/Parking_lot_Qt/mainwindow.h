@@ -92,6 +92,7 @@ private slots:
 private slots:
     void on_pushButton_close_clicked();
     void on_pushButton_open_clicked();
+    void on_pushButton_reset_clicked();
     void receive();
     void send(QByteArray data);
     void on_pushButtonSetPower_clicked();

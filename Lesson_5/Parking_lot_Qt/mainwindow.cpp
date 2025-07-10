@@ -515,6 +515,57 @@ void MainWindow::on_pushButtonSetPower_clicked()
     this->send(data);
 }
 
+void MainWindow::on_pushButton_reset_clicked()
+{
+    resetSystem();
+}
+
+void MainWindow::resetSystem()
+{
+    // 1. Delete the existing GraphWidget and its scene
+    // This removes all graphical items including nodes and edges
+    if (widget) {
+        widget->deleteLater(); // Schedule the widget for deletion
+        widget = nullptr;      // Clear the pointer to avoid dangling reference
+    }
+
+    // 2. Clear all topology data
+    nodes.clear();   // Remove all node pointers from the vector
+    edges.clear();   // Remove all edge pointers from the vector
+
+    // 3. Reset the log window (QTextEdit)
+    ui->textEdit_Status->clear();
+
+    // 4. Uncheck all parking and working checkboxes
+    QVector<QCheckBox *> checkboxes = {
+        ui->park1, ui->park2, ui->park3, ui->park4, ui->park5, ui->park6, ui->park7, ui->park8,
+        ui->work1, ui->work2, ui->work3, ui->work4, ui->work5, ui->work6, ui->work7, ui->work8
+    };
+    for (QCheckBox *checkbox : checkboxes) {
+        checkbox->setChecked(false); // Reset to unchecked
+    }
+
+    // 5. Reset all LCD displays to 0
+    QVector<QLCDNumber *> lcds = {
+        ui->value_light1, ui->value_light2, ui->value_light3, ui->value_light4,
+        ui->value_light5, ui->value_light6, ui->value_light7, ui->value_light8,
+        ui->value_distance1, ui->value_distance2, ui->value_distance3, ui->value_distance4,
+        ui->value_distance5, ui->value_distance6, ui->value_distance7, ui->value_distance8,
+        ui->battery1, ui->battery2, ui->battery3, ui->battery4,
+        ui->battery5, ui->battery6, ui->battery7, ui->battery8
+    };
+    for (QLCDNumber *lcd : lcds) {
+        lcd->display(0); // Display 0 as the default value
+    }
+
+    // 6. Recreate the GraphWidget and its internal scene
+    // This will also remove the old scene and graphics context
+    widget = new GraphWidget;
+
+    // 7. Reinitialize the topology: nodes, edges, initial positions, etc.
+    createDockWindows();
+}
+
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Constructor for GraphWidget, initializes the view and its scene
 GraphWidget::GraphWidget(QWidget *parent)
