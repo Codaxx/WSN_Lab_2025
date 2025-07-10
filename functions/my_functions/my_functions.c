@@ -336,7 +336,7 @@ void from_D2matrix_to_D1matrix(const unsigned char* D2matrix, const unsigned cha
 void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, const unsigned char dim){
     for (int i=0; i<dim; i++) {
         for (int j=0; j<dim; j++) {
-            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] >= -75) {
+            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] >= -75 && rssi_matrix[i*dim+j] != 0) {
                 adjacent[i*dim+j] = 1;
             }else {
                 adjacent[i*dim+j] = 0;
@@ -347,7 +347,7 @@ void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, 
 
 // new functions, mainly used for print message to be used by GUI
 
-void print_link_stage(const unsigned char* head, const unsigned char num_head, const unsigned char* head_sub_node, const unsigned char dim, const unsigned char* adjacent, const unsigned char* master, const float* battery) {
+void print_link_stage(const unsigned char* head, const unsigned char num_head, const unsigned char* head_sub_node, const unsigned char dim, const unsigned char* adjacent, const unsigned char* master, const float* battery, unsigned char* const res) {
     unsigned char hop1[dim*dim];
     hop_matrix(adjacent, hop1, dim, 1);
     unsigned char connection_summary[dim];
@@ -364,6 +364,8 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
         if (master[head[i]] == 1) {
             printf("Newlink %d -> 255\r\n", head[i]);
             can_2_master[head[i]] = 1;
+            res[head[i]+1+0*(dim+1)] = 1;
+            res[(head[i]+1)*(dim+1)+0] = 1;
         }
         else {
             float battery_temp = 0, hop_weight;
@@ -378,9 +380,11 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
                     }
                 }
             }
-            if (next != 254){
+            if (next != 254) {
                 printf("Newlink %d -> %d\r\n", head[i], next);
                 can_2_master[head[i]] = 1;
+                res[(head[i]+1)*(dim+1)+next+1] = 1;
+                res[(next+1)*(dim+1)+head[i]+1] = 1;
             }
         }
     }
@@ -390,6 +394,8 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
             if (head_sub_node[i*dim + j] != 0) {
                 printf("Newlink %d -> %d\r\n",  j, head[i]);
                 can_2_master[j] = 1;
+                res[(j+1)*(dim+1)+head[i]+1] = 1;
+                res[(head[i]+1)*(dim+1)+j+1] = 1;
             }
         }
     }
@@ -402,11 +408,13 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
                 if(head[j] == i) flag = 0;
             }
             if (flag) {
+                // printf("i and head, %d, %d\n\r", i, head[j]);
                 unconnected_index[index][0] = i;
                 index += 1;
             }
         }
     }
+    // allocate rest nodes
     for (int i=0; i<dim; i++) {
         if (unconnected_index[i][0] != 255) {
             float temp_criteria = 0, temp_weight;
@@ -428,9 +436,11 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
     }
     // third sent rest-node id
     for (int i=0; i<dim; i++) {
-        if (unconnected_index[i][0] != 255 && unconnected_index[i][1]  != 255) {
+        if (unconnected_index[i][0] != 255 && unconnected_index[i][1] != 255) {
             //printf("------%d\n\r", unconnected_index[i][0]);
             printf("Newlink %d -> %d\r\n", unconnected_index[i][0], unconnected_index[i][1]);
+            res[(unconnected_index[i][0]+1)*(dim+1)+unconnected_index[i][1]+1] = 1;
+            res[(unconnected_index[i][1]+1)*(dim+1)+unconnected_index[i][0]+1] = 1;
         }
     }
 }
@@ -447,4 +457,71 @@ void death_printer(const unsigned char* adjacent, const unsigned char dim) {
             printf("Link Lost %d\r\n", i);
         }
     }
+}
+
+void extract_matrix(const unsigned char* org_adjacent, const unsigned char dim, unsigned char* res_adjacent, unsigned char* master) {
+    for (int i=1; i<dim; i++) {
+        master[i-1] = org_adjacent[i];
+    }
+    for (int i=1; i<dim; i++) {
+        for (int j=1; j<dim; j++) {
+            res_adjacent[(i-1)*(dim-1)+(j-1)] = org_adjacent[i*dim+j];
+        }
+    }
+}
+
+void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table) {
+    // data transform
+    const unsigned char low_dim = dim-1;
+    unsigned char temp_adjacent[dim*dim];
+    unsigned char adjacent[low_dim*low_dim];
+    unsigned char master[low_dim];
+    short used_rssi[low_dim*low_dim];
+    memset(adjacent, 0, low_dim*low_dim*sizeof(unsigned char));
+    memset(master, 0, low_dim*sizeof(unsigned char));
+
+    rssi_to_adjacent(rssi, temp_adjacent, dim);
+    for (int i=0; i<dim; i++) {
+        for (int j=0; j<dim; j++) {
+            printf("%d ", rssi[i*dim+j]);
+        }
+        printf("\n");
+    }
+    printf("--------------------------------\n");
+    // for (int i=0; i<dim; i++) {
+    //     for (int j=0; j<dim; j++) {
+    //         printf("%d ", temp_adjacent[i*dim+j]);
+    //     }
+    //     printf("\n");
+    // }
+    // printf("--------------------------------\n");
+    extract_matrix(temp_adjacent, dim, adjacent, master);
+
+    for (int i=0; i<low_dim; i++) {
+        for (int j=0; j<low_dim; j++) {
+            printf("%d ", adjacent[i*low_dim+j]);
+        }
+        printf("\n");
+    }
+    printf("--------------------------------\n");
+
+    for (int i=1; i<dim; i++) {
+        for (int j=1; j<dim; j++) {
+            used_rssi[(i-1)*low_dim+j-1] = rssi[i*dim+j];
+        }
+    }
+    printf("-------------------------------\n");
+    // select head
+    unsigned char temp_head_index[3]={0};
+    cluster_head_choose(adjacent, 3, low_dim, master, battery, used_rssi, temp_head_index);
+    for (int i=0;i<3;i++) {
+        printf("%d ",temp_head_index[i]);
+    }
+    printf("\n\r");
+    unsigned char temp_head_allocate_node[3*low_dim];
+    memset(temp_head_allocate_node, 0, 3*low_dim*sizeof(unsigned char));
+    // allocate groups
+    group_selection(3, temp_head_index, low_dim, adjacent, master, battery, temp_head_allocate_node);
+
+    print_link_stage(temp_head_index, 3, temp_head_allocate_node, low_dim, adjacent, master, battery, link_table);
 }
