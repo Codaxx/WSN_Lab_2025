@@ -60,8 +60,16 @@ struct dio_packet {
 
 
 
-
-
+typedef struct sensor_data
+{
+    uint8_t type;
+    linkaddr_t  source;
+    int light_lux;
+    int distance;
+    int battery;
+    int temperature;
+    /* data */
+}sensor_data;
 /********************ROUTING LIST*************************/
 
 
