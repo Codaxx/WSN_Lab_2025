@@ -1,3 +1,7 @@
+#define LOG_LEVEL LOG_LEVEL_INFO
+#define LOG_MODULE "LEACH"
+
+
 #include "contiki.h"
 #include "net/nullnet/nullnet.h"
 #include "net/packetbuf.h"
@@ -11,37 +15,71 @@
 #include "net/linkaddr.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
+#include "common/saadc-sensor.h"		// Saadc to read Battery Sensor.
+#include "common/temperature-sensor.h"
+#include "my_sensor.h"
+#include "my_functions.h"
 #include "packet_structure.h"
 #include "project-conf.h"
 
 // used for recording the packet seq, prevent loop
 static uint16_t last_seq_id = 0;
 static linkaddr_t addr_master;
-int8_t adjacency_matrix[MAX_NODES][MAX_NODES];  
+static short adjacency_matrix[MAX_NODES][MAX_NODES];  
 static linkaddr_t node_index_to_addr[MAX_NODES]; 
 static int num_known_nodes = 0;
+
+// sensor data transmission
+static uint8_t trans_flag;
+static int distance_buffer[BUFFER_SIZE], light_buffer[BUFFER_SIZE], temperature_buffer[BUFFER_SIZE];
+static int global_index;
+static int distance_av_0, light_av_0, temperature_av_0;
+static int distance_av_1, light_av_1, temperature_av_1;
+static sensor_data recv_message;
+
 
 LIST(local_rt_table);
 MEMB(rt_mem,rt_entry,MAX_NODES);
 
+//sensor data 
+void distance_av_cal(){
+	distance_av_1 = distance_av_0;
+	for(int i=0; i<BUFFER_SIZE; i++){
+		distance_av_0 += distance_buffer[i];
+	}
+	distance_av_0 /= BUFFER_SIZE;
+}
 
+void light_av_cal(){
+	light_av_1 = light_av_0;
+	for(int i=0; i<BUFFER_SIZE; i++){
+		light_av_0 += light_buffer[i];
+	}
+	light_av_0 /= BUFFER_SIZE;
+}
 
+void temperture_av_cal(){
+	temperature_av_1 = temperature_av_0;
+	for(int i=0; i<BUFFER_SIZE; i++){
+		temperature_av_0 += temperature_buffer[i];
+	}
+	temperature_av_0 /= BUFFER_SIZE;
+}
 
-
-
-static uint8_t check_local_rt(const linkaddr_t *addr)
-{
-	uint8_t in_list = 0;	
-	for(rt_entry *e= list_head(local_rt_table); e != NULL; e = e->next)
+// routing discovery part 
+rt_entry * check_local_rt(const linkaddr_t *addr)
+{ 
+  rt_entry *e= list_head(local_rt_table);
+	for(; e != NULL; e = e->next)
 	{
 		if(linkaddr_cmp(&e->dest, addr))
 		{
-			in_list = 1;
-			break;
+			return e;
 		}
 	}
-	return in_list;
+	return e;
 }
 
 uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
@@ -108,8 +146,6 @@ void print_local_routing_table() {
   LOG_INFO("+------------------+ ----------------------+--------------------+\n");
 }
 
-
-// Forward packet via broadcast
 void forward_hello(struct dio_packet *pkt)
 {
   nullnet_buf = (uint8_t *)pkt;
@@ -128,34 +164,47 @@ void update_local_rt_table(const linkaddr_t *dst, const linkaddr_t *next,uint8_t
     e->seq_no = seq_no;
     list_add(local_rt_table, e);  
   }
+}
+
+void patch_update_local_rt_table(const linkaddr_t *dst, const linkaddr_t *next,uint8_t tot_hop, int16_t metric,uint16_t seq_no)
+{
+  rt_entry* e = check_local_rt(dst);
+    if (e == NULL)
+    {
+      update_local_rt_table(dst,dst,tot_hop,metric,seq_no);
+      LOG_INFO("Discover new nodes adding to the rt table:\n");
+    }
+    else if (abs(e->metric -metric) > 5)   
+    {
+      LOG_INFO("Update rt table with new metric:\n");
+      e->metric =metric ;
+    }
+
 
 
 }
 
-void print_dao_table_entries(const struct dao_packet *pkt)
+void print_rt_entries_pkt(const struct rt_entry_pkt *pkt)
 {
   printf("DAO Packet from node ");
-  uint16_t src_id=get_node_id_from_linkaddr(&pkt->src);
-  printf("%u",src_id);
-  printf(", seq_id: %u, hop_count: %u, entries: %u\n",
-         pkt->seq_id, pkt->hop_count, pkt->no_entries);
-
-  printf("+--------------------------------------------------------------+\n");
-  for (int i = 0; i < pkt->no_entries; i++) {
-    const rt_entry *e = &pkt->table[i]; 
-    int16_t dest_id = get_node_id_from_linkaddr(&e->dest);
-    int16_t next_id = get_node_id_from_linkaddr(&e->next_hop);
-    printf("| Entry %2d | dest: %u | next_hop: %u | hops: %u | metric: %d | seq: %u |\n",
-           i,
+  uint16_t pkt_src_id = get_node_id_from_linkaddr(&pkt->src);
+  printf("%u", pkt_src_id);
+  printf("+-----------------------------------------------------------------------------------+\n");
+  printf("|src   |  dest  | next_hop | hops | metric | seq_no |\n");
+  printf("+-----------------------------------------------------------------------------------+\n");
+    uint16_t src_id  = get_node_id_from_linkaddr(&pkt->rt_src);
+    uint16_t dest_id = get_node_id_from_linkaddr(&pkt->rt_dest);
+    uint16_t next_id = get_node_id_from_linkaddr(&pkt->rt_next_hop);
+    printf("| %5u  |  %5u |   %5u  |  %3u |  %5d |  %5u |\n",
+           src_id,
            dest_id,
            next_id,
-           e->tot_hop,
-           e->metric,
-           e->seq_no);
-  }
-  printf("+--------------------------------------------------------------+\n");
-}
+           pkt->rt_tot_hop,
+           pkt->rt_metric,
+           pkt->rt_seq_no);
 
+  printf("+-----------------------------------------------------------------------------------+\n");
+}
 
 bool parent_is_in_rt_table(const linkaddr_t *src)
 {
@@ -169,75 +218,17 @@ bool parent_is_in_rt_table(const linkaddr_t *src)
   }
   return 0;
 }
-/*
-// routing report use this function, and it will send routing report packet to the dest
-static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uint16_t seq_id)
-{
-  // adding the local routing table info to the packet
-  static struct dao_packet pkt;
-  //memset(&pkt, 0, sizeof(pkt));
-  pkt.type = RT_REPORT_PACKET;
-  linkaddr_copy(&pkt.src, &linkaddr_node_addr);
-  //writing the local routing table to the packet
-  pkt.no_entries = 0;
-  pkt.hop_count  = 0; 
-  pkt.seq_id =  seq_id;
-  rt_entry *iter = list_head(local_rt_table);
-  for(; iter != NULL; iter = iter->next) {
-    //pkt.table[no_entries++]=iter;
-    /*
-    printf("Copying entry %d:\n", pkt.no_entries);
-    printf("  type: %d\n", iter->type);
-    uint16_t dest_id = get_node_id_from_linkaddr(&iter->dest);
-    uint16_t next_id = get_node_id_from_linkaddr(&iter->next_hop);
-    printf("  dest: %i\n",dest_id );
-    printf("  next_hop: %i\n", next_id);
-    printf("  tot_hop: %d\n", iter->tot_hop);
-    printf("  metric: %d\n", iter->metric);
-    printf("  seq_no: %u\n", iter->seq_no);
-    */
-    /*
-    pkt.table[pkt.no_entries].type     = iter->type;
-    linkaddr_copy(&pkt.table[pkt.no_entries].dest,     &iter->dest);
-    linkaddr_copy(&pkt.table[pkt.no_entries].next_hop, &iter->next_hop);
-    pkt.table[pkt.no_entries].tot_hop = iter->tot_hop;
-    pkt.table[pkt.no_entries].metric  = iter->metric;
-    pkt.table[pkt.no_entries].seq_no  = iter->seq_no;
-    */
-    /*
-    dest_id = get_node_id_from_linkaddr(&pkt.table[pkt.no_entries].dest);
-    next_id = get_node_id_from_linkaddr(&pkt.table[pkt.no_entries].next_hop);
-
-    printf("Entry %d: dest=%i next_hop=%i hop=%d metric=%d seq=%u\n",
-      pkt.no_entries,
-      dest_id,
-      next_id,
-      pkt.table[pkt.no_entries].tot_hop,
-      pkt.table[pkt.no_entries].metric,
-      pkt.table[pkt.no_entries].seq_no);
-    */
-   /*
-    pkt.no_entries++;
-  }
-  LOG_INFO("I have sent RT_REPORT_PACKET\n");
-  uint16_t dest_id = get_node_id_from_linkaddr(dest);
-  printf("Sending packet to dest: %i\n", dest_id);
-
-  // unicast to the parent node
-  nullnet_buf = (uint8_t *)&pkt;
-
-  nullnet_len = offsetof(struct dao_packet, table) + pkt.no_entries * sizeof(rt_entry);
-
-  NETSTACK_NETWORK.output(dest); 
-}*/
 
 static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uint16_t seq_id)
 {
   static struct rt_entry_pkt pkt;
   //memset(&pkt, 0, sizeof(pkt));
   pkt.type = RT_REPORT_PACKET;
-  linkaddr_copy(&rt_entry_pkt.src, &linkaddr_node_addr);
+  linkaddr_copy(&pkt.src, &linkaddr_node_addr);
+  pkt.hop_count = 0;
+  pkt.seq_id = seq_id;
   rt_entry *iter = list_head(local_rt_table);
+  linkaddr_copy(&pkt.rt_src,     &iter->dest);
   for(; iter != NULL; iter = iter->next) {
     
     printf("  type: %d\n", iter->type);
@@ -249,23 +240,21 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
     printf("  metric: %d\n", iter->metric);
     printf("  seq_no: %u\n", iter->seq_no);
     
-    linkaddr_copy(rt_entry_pkt.dest,     &iter->dest);
-    linkaddr_copy(rt_entry_pkt.next_hop, &iter->next_hop);
-    rt_entry_pkt.tot_hop = iter->tot_hop;
-    rt_entry_pkt.metric  = iter->metric;
-    rt_entry_pkt.seq_no  = iter->seq_no;
-  
-    dest_id = get_node_id_from_linkaddr(&rt_entry_pkt.dest);
-    next_id = get_node_id_from_linkaddr(&rt_entry_pkt.next_hop);
+    linkaddr_copy(&pkt.rt_dest,     &iter->dest);
+    linkaddr_copy(&pkt.rt_next_hop, &iter->next_hop);
+    pkt.rt_tot_hop = iter->tot_hop;
+    pkt.rt_metric  = iter->metric;
+    pkt.rt_seq_no  = iter->seq_no;
 
-    printf("Entry %d: dest=%i next_hop=%i hop=%d metric=%d seq=%u\n",
+
+    /*printf("Entry %d: dest=%i next_hop=%i hop=%d metric=%d\n",
       dest_id,
       next_id,
-      rt_entry_pkt.tot_hop,
-      rt_entry_pkt.metric,
-      rt_entry_pkt.seq_no);
+      pkt.tot_hop,
+      pkt.metric);*/
+    clock_wait(CLOCK_SECOND / 20);  // 等待 50ms
     nullnet_buf = (uint8_t *)&pkt;
-    nullnet_len = sizeof(rt_entry_pkt);
+    nullnet_len = sizeof(pkt);
     NETSTACK_NETWORK.output(dest); 
 
   }
@@ -273,8 +262,6 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
   uint16_t dest_id = get_node_id_from_linkaddr(dest);
   printf("Sending packet to dest: %i\n", dest_id);
 }
-
-
 
 
 // Receive hello packet callback
@@ -291,38 +278,36 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
   linkaddr_t report_src;
   linkaddr_copy(&addr_master, &pkt->src_master);
   linkaddr_copy(&report_src, &pkt->src);
+  last_seq_id = pkt->seq_id;
   if(node_id == MASTER_NODE_ID) 
   {
     leds_single_off(LEDS_LED2);
     return;
   }
+
   // Avoid loops: if already seen, drop
-  /*if((pkt->seq_id <= last_seq_id) && !parent_is_in_rt_table(src)){
-    leds_single_off(LEDS_LED2);
-    //LOG_INFO("The Packet has been Processed\r\n");
-    return;
-  }*/
+  //if((pkt->seq_id <=last_seq_id) && !parent_is_in_rt_table(&report_src)){
+  //  leds_single_off(LEDS_LED2);
+  //  LOG_INFO("The Packet has been Processed\r\n");
+  //  return;
+  //}
 
+  // processing the packet info
   int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
-  // Update sequence tracking
-  last_seq_id = pkt->seq_id;
-  // Increment hop count
   pkt->hop_count++;
-
   linkaddr_copy(&pkt->src, &linkaddr_node_addr);
-
 
   // initialization ip_table, and add flooding info
   // update_local_rt_table(master_node info + hello packet info);
   // flooding connectivity
 
   // adding the hello pkt_src to the routing table
-  update_local_rt_table(src, src,1,rssi,pkt->seq_id);
+  patch_update_local_rt_table(&report_src,&report_src,pkt->hop_count,rssi,pkt->seq_id);
 
   // other nodes adding the master node hop to the routing table
-  if (!linkaddr_cmp(src, &pkt->src_master))
+  if (!linkaddr_cmp(&report_src, &pkt->src_master))
   {
-    update_local_rt_table(&pkt->src_master, src,pkt->hop_count,rssi,pkt->seq_id);
+    patch_update_local_rt_table(&pkt->src_master,&report_src,pkt->hop_count,rssi,pkt->seq_id);
   }
 
   // print the local_rt_table
@@ -341,9 +326,18 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
 {
   leds_single_on(LEDS_LED2);
   LOG_INFO("Receiving RT_REPORT_PACEKT:\n");
-  struct dao_packet *pkt = (struct dao_packet *)data;
-  print_dao_table_entries(pkt);
-  LOG_INFO("-------dao packet size-%u--------------",sizeof(struct dao_packet));
+  struct rt_entry_pkt *pkt = (struct rt_entry_pkt *)data;
+  //struct dao_packet *pkt = (struct dao_packet *)data;
+  //print_dao_table_entries(pkt);
+  print_rt_entries_pkt(pkt);
+  LOG_INFO("-------dao packet size-%u--------------",sizeof(struct rt_entry_pkt));
+  
+  int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
+  patch_update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
+
+
+  //update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
+
   
   if(node_id == MASTER_NODE_ID)
   {  
@@ -355,25 +349,19 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
       return;
     }
     // update the adjacency matrix
-    for (int i = 0; i < pkt->no_entries; i++) {
-      const rt_entry *e = &pkt->table[i];
-      int dst_index = get_index_from_addr(&e->dest);
-      if (dst_index == -1) continue;
-      adjacency_matrix[src_index][dst_index] = e->metric;
+    int dst_index = get_index_from_addr(&pkt->rt_dest);
+    if (src_index == dst_index) 
+    {
+      adjacency_matrix[src_index][dst_index] = 255;
     }
-
+    else
+    {
+      adjacency_matrix[src_index][dst_index] = pkt->rt_metric;
+      adjacency_matrix[dst_index][src_index] = pkt->rt_metric;
+    }
     // go through the routing report rt_table, update the local rt table
     // note that next hop would be the packet src 
-    for (int i = 0; i < pkt->no_entries; i++) {
-      const rt_entry *e = &pkt->table[i];
-      if (!check_local_rt(&e->dest))
-      {
-        update_local_rt_table(&e->dest,src,e->tot_hop,e->metric,e->seq_no);
-        print_local_routing_table(); 
-      }
-    }
-
-    LOG_INFO("Updated local routing table:\n");
+    patch_update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop,pkt->rt_metric,pkt->rt_seq_no);
     print_local_routing_table();
     print_adjacency_matrix();
     leds_single_off(LEDS_LED2);
@@ -381,21 +369,31 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
   else
   {
     // update my own local routing table
-    int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
-    update_local_rt_table(src,src,pkt->hop_count++,rssi,pkt->seq_id);
     // since local routing table update, routing report
     routing_report(&addr_master, pkt->hop_count, rssi,pkt->seq_id);
     LOG_INFO("Not the Master Node forwarding RT_REPORT_PACKET:\n");
     const linkaddr_t *dest = get_next_hop_to(&addr_master);
     nullnet_buf = (uint8_t *)&pkt;
-    //nullnet_len = sizeof(pkt);
-    nullnet_len = offsetof(struct dao_packet, table) + pkt->no_entries * sizeof(rt_entry);
+    nullnet_len = sizeof(pkt);
+    //nullnet_len = offsetof(struct dao_packet, table) + pkt->no_entries * sizeof(rt_entry);
     NETSTACK_NETWORK.output(dest); 
   }
 
 
 }
 
+static void SENSOR_PACKET_callback(const void *data, uint16_t len, 
+                            const linkaddr_t *src, const linkaddr_t *dest){
+
+	memcpy(&recv_message, (sensor_data*)data, sizeof(recv_message));
+	if(recv_message.type == 3){
+		LOG_INFO("Received data are from %d:\n\r", get_node_id_from_linkaddr(&recv_message.source));
+		LOG_INFO("batttery: [%d](mV)", recv_message.battery);
+		LOG_INFO("temperature: [%d](C)", recv_message.temperature);
+		LOG_INFO("light: [%d](lux)", recv_message.light_lux);
+		LOG_INFO("distance: [%d](cm)", recv_message.distance);
+	}
+}
  
 static void HELLO_Callback(const void *data, uint16_t len,
                            const linkaddr_t *src, const linkaddr_t *dest)
@@ -412,27 +410,46 @@ static void HELLO_Callback(const void *data, uint16_t len,
       DAO_PACKET_callback(data, len, src, dest);
       leds_single_off(LEDS_LED2);
       break;
+    case SENSOR_DATA_PACKET:
+      SENSOR_PACKET_callback(data, len, src, dest);
+      leds_single_off(LEDS_LED2);
+      break;
     default:
       LOG_WARN("Unknown packet type: %d\r\n", type);
      
   }
 }
 
+
+
 PROCESS(hello_process, "HELLO Flooding Process");
-AUTOSTART_PROCESSES(&hello_process);
+PROCESS(sensro_report_process, "Hello Dummy Process");
+PROCESS(choose_ch_process, "choosing CH Process");
+
+AUTOSTART_PROCESSES(&hello_process, &sensro_report_process,&choose_ch_process);
 PROCESS_THREAD(hello_process, ev, data) {
   PROCESS_BEGIN();
+  LOG_INFO("HELLP PROCESS BEGIN\n");
   NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,GROUP_CHANNEL);
   radio_value_t channel;
   NETSTACK_CONF_RADIO.get_value(RADIO_PARAM_CHANNEL, &channel);
   LOG_INFO("Radio channel set to %u\r\n", channel);
-
+  get_index_from_addr(&linkaddr_node_addr);
   //initiation the adjacency_matrix
   for (int i = 0; i < MAX_NODES; i++)
-  for (int j = 0; j < MAX_NODES; j++)
-    adjacency_matrix[i][j] = -1;  
-
-
+  {
+    for (int j = 0; j < MAX_NODES; j++)
+    {
+      if (i==j)
+      {
+        adjacency_matrix[i][j] = 255;  
+      }
+      else
+      {
+        adjacency_matrix[i][j] = 0;  
+      }
+    }
+  }
   memb_init(&rt_mem);
   list_init(local_rt_table);
   update_local_rt_table(&linkaddr_node_addr, &linkaddr_node_addr,0,0,0);
@@ -465,4 +482,110 @@ PROCESS_THREAD(hello_process, ev, data) {
   PROCESS_END();
 }
 
+PROCESS_THREAD(sensro_report_process, ev, data)
+{
+  static struct etimer sensor_reading_timer;
+	static int light_raw, distance_raw;
+	static int light_value, distance_value;
+	static int voltage, temperature;
+	static sensor_data packet;
+  PROCESS_BEGIN();
+  etimer_set(&sensor_reading_timer, CLOCK_SECOND*3);
 
+  if(node_id == MASTER_NODE_ID) {
+  }
+  else{
+    while(1) {
+      
+      PROCESS_WAIT_EVENT();
+      // read raw data from ADC
+      light_raw = saadc_sensor.value(P0_30);
+      distance_raw = saadc_sensor.value(P0_31);
+      
+      // get sensor data
+      light_value = get_light_lux(light_raw);
+      distance_value = get_distance(distance_raw);
+      voltage = get_millivolts(saadc_sensor.value(BATTERY_SENSOR));
+      temperature = temperature_sensor.value(0)/4;
+
+      distance_buffer[global_index] = distance_value;
+      light_buffer[global_index] = light_value;
+      temperature_buffer[global_index] = temperature;
+      global_index ++;
+      if(global_index>=BUFFER_SIZE){
+        distance_av_cal();
+        light_av_cal();
+        temperture_av_cal();
+        global_index = 0;
+        trans_flag = 1;
+      }
+      if(ABS(distance_av_1-distance_av_0) >= DIS_THRES && ABS(light_av_1-light_av_0) >= LIGHT_THRES){
+        trans_flag = 1;
+      }
+      // assign data to packet;
+      if(trans_flag){
+        packet.type = 3;
+        linkaddr_copy(&packet.source, &linkaddr_node_addr);
+        packet.light_lux = light_av_0;
+        packet.distance = distance_av_0;
+        packet.battery = voltage;
+        packet.temperature = temperature;
+
+        // transmit data to master
+        const linkaddr_t *next_hop = get_next_hop_to(&addr_master);
+        if(next_hop != NULL) {
+          nullnet_buf = (uint8_t *)&packet;
+          nullnet_len = sizeof(packet);
+          NETSTACK_NETWORK.output(next_hop);
+          LOG_INFO("Sent sensor data to master. Temp=%i, Distance=%i, Battery=%i, Light_Lux%i\n",
+            packet.temperature,packet.distance,packet.battery,packet.light_lux );
+        } else {
+          LOG_WARN("No route to master!\n");
+        }
+
+        trans_flag = 0;
+      }  
+      etimer_reset(&sensor_reading_timer);
+    }
+   
+  }
+  
+
+  PROCESS_END();
+}
+const float battery[MASTER_NODE_ID] = {0.8f,0.9f, 0.7f, 1.0f, 0.9f, 0.8f, 0.6f, 0.8f,0.3f,0.6f};
+PROCESS_THREAD(choose_ch_process, ev, data){
+	static struct etimer choose_timer;
+  PROCESS_BEGIN();
+  etimer_set(&choose_timer, CLOCK_SECOND*3);
+	while(1){
+		PROCESS_WAIT_EVENT();
+		// code to test head chosen algorithm
+		/*const short rssi[] = {
+			0,-60,0,0,-30,-40,0,0,
+			-60,0,0,-50,-30,0,-73,0,
+			0,0,0,0,-50,-50,0,-50,
+			0,-50,0,0,0,-40,-47,0,
+			-30,-30,-50,0,0,0,-30,-47,
+			-40,0,-50,-30,0,0,0,-45,
+			0,-73,0,-47,-39,0,0,0,
+			0,0,-50,0,-47,-45,0,0};*/
+
+    unsigned char head_list[3] ={0};
+    short* rssi = (short*)adjacency_matrix;
+		unsigned char link_table[MAX_NODES][MAX_NODES] = {0};
+		from_rssi_to_link(rssi, battery, MAX_NODES, (uint8_t*)link_table,head_list);
+		for (int i=0;i<MAX_NODES;i++) {
+			for (int j=0;j<MAX_NODES;j++) {
+				printf("%d ",link_table[i][j]);
+			}
+			printf("\n");
+		}
+		printf("===================================================\n\r");
+		etimer_reset(&choose_timer);
+		// route_ready = READY;
+
+	}
+
+	PROCESS_END();
+}
