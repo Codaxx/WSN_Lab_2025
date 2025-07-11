@@ -68,6 +68,7 @@ private:
     void evaluateParkingStatus(int nodeID);
     void createDockWindows();
     void updateGraphBoxStyle();
+    void resetSystem();
 
     // Number of nodes in the graph
     static const int NODE_COUNT = 9;
@@ -85,8 +86,6 @@ private:
         QPointF(200, 125)        // Node 8
     };
 
-
-private slots:
 
 
 private slots:
