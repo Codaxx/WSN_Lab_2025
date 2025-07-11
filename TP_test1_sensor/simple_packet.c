@@ -423,10 +423,8 @@ PROCESS(sensro_report_process, "Hello Dummy Process");
 PROCESS(choose_ch_process, "choosing CH Process");
 
 
-static int hello_process_cnt =0;
-
 AUTOSTART_PROCESSES(&hello_process, &sensro_report_process,&choose_ch_process);
-PROCESS_THREAD(hello_process, ev, data) {
+/*PROCESS_THREAD(hello_process, ev, data) {
   PROCESS_BEGIN();
   LOG_INFO("HELLO PROCESS BEGIN\n");
   NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,GROUP_CHANNEL);
@@ -481,7 +479,92 @@ PROCESS_THREAD(hello_process, ev, data) {
     
   }
   PROCESS_END();
+}*/
+
+PROCESS_THREAD(hello_process, ev, data) {
+  static struct etimer timer;
+  static struct dio_packet my_hello_pkt;
+  static uint8_t hello_process_cnt = 0;
+
+  PROCESS_BEGIN();
+
+  LOG_INFO("HELLO PROCESS BEGIN\n");
+  NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,GROUP_CHANNEL);
+  radio_value_t channel;
+  NETSTACK_CONF_RADIO.get_value(RADIO_PARAM_CHANNEL, &channel);
+  LOG_INFO("Radio channel set to %u\r\n", channel);
+
+  get_index_from_addr(&linkaddr_node_addr);
+  for (int i = 0; i < MAX_NODES; i++) {
+    for (int j = 0; j < MAX_NODES; j++) {
+      adjacency_matrix[i][j] = (i == j) ? 255 : 0;
+    }
+  }
+  memb_init(&rt_mem);
+  list_init(local_rt_table);
+  update_local_rt_table(&linkaddr_node_addr, &linkaddr_node_addr, 0, 0, 0);
+
+  nullnet_set_input_callback(HELLO_Callback);
+  last_seq_id = 1;
+
+  if(node_id == MASTER_NODE_ID) {
+    etimer_set(&timer, CLOCK_SECOND * HELLO_INTERVAL);
+    while(1) {
+      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
+
+      if(hello_process_cnt >= 10) {
+        LOG_INFO("HELLO process complete. Exiting.\n");
+        PROCESS_EXIT();  
+      }
+
+      leds_single_on(LEDS_LED1);
+      my_hello_pkt.type = HELLO_PACKET;
+      linkaddr_copy(&my_hello_pkt.src, &linkaddr_node_addr);
+      linkaddr_copy(&my_hello_pkt.src_master, &linkaddr_node_addr);
+      my_hello_pkt.hop_count = 0;
+      my_hello_pkt.seq_id = last_seq_id++;
+
+      forward_hello(&my_hello_pkt);
+      LOG_INFO("MASTER broadcasted HELLO %d\r\n", hello_process_cnt+1);
+      leds_single_off(LEDS_LED1);
+
+      hello_process_cnt++;
+      etimer_reset(&timer);
+    }
+  }
+
+  PROCESS_END();
 }
+
+
+
+linkaddr_t advertise_node_addr(int my_id,(uint8_t*)link_table)
+{
+  for (int dst = 0; dst < MAX_NODES; dst++) {
+    if (link_table[my_id][dst] == 1) {     
+      linkaddr_t dest_addr= node_index_to_addr[dst];
+      return dest_addr; 
+    }
+  }
+  LOG_WARN("Can't find the routing/n/r");
+  return NULL; 
+}
+
+
+advertise_local_routing_table(){
+  for (int i=0;i<MAX_NODES;i++) {
+    for (int j=0;j<MAX_NODES;j++) {
+      //printf("%d ",link_table[i][j]);
+    }
+    //printf("\n");
+  }
+
+
+
+
+}
+
+
 
 PROCESS_THREAD(sensro_report_process, ev, data)
 {
@@ -561,16 +644,7 @@ PROCESS_THREAD(choose_ch_process, ev, data){
   etimer_set(&choose_timer, CLOCK_SECOND*3);
 	while(1){
 		PROCESS_WAIT_EVENT();
-		// code to test head chosen algorithm
-		/*const short rssi[] = {
-			0,-60,0,0,-30,-40,0,0,
-			-60,0,0,-50,-30,0,-73,0,
-			0,0,0,0,-50,-50,0,-50,
-			0,-50,0,0,0,-40,-47,0,
-			-30,-30,-50,0,0,0,-30,-47,
-			-40,0,-50,-30,0,0,0,-45,
-			0,-73,0,-47,-39,0,0,0,
-			0,0,-50,0,-47,-45,0,0};*/
+
 
     unsigned char head_list[3] ={0};
     short* rssi = (short*)adjacency_matrix;
@@ -584,6 +658,7 @@ PROCESS_THREAD(choose_ch_process, ev, data){
 			}
 			//printf("\n");
 		}
+    advertise_local_routing_table();
 		//printf("===================================================\n\r");
 		etimer_reset(&choose_timer);
 		// route_ready = READY;
