@@ -515,19 +515,26 @@ void MainWindow::on_pushButtonSetPower_clicked()
     this->send(data);
 }
 
-void MainWindow::on_pushButton_reset_clicked()
-{
-    resetSystem();
-}
+//void MainWindow::on_pushButton_reset_clicked()
+//{
+//    resetSystem();
+//}
 
-void MainWindow::resetSystem()
-{
-    // 1. Delete the existing GraphWidget and its scene
-    // This removes all graphical items including nodes and edges
-    if (widget) {
-        widget->deleteLater(); // Schedule the widget for deletion
-        widget = nullptr;      // Clear the pointer to avoid dangling reference
-    }
+//void MainWindow::resetSystem()
+//{
+//    // 1. Delete the existing GraphWidget and its scene
+//    // This removes all graphical items including nodes and edges
+//    if (widget) {
+//        widget->deleteLater(); // Schedule the widget for deletion
+//        widget = nullptr;      // Clear the pointer to avoid dangling reference
+//    }
+//    // 6. Recreate the GraphWidget and its internal scene
+//    // This will also remove the old scene and graphics context
+//    widget = new GraphWidget;
+
+//    // 7. Reinitialize the topology: nodes, edges, initial positions, etc.
+//    createDockWindows();
+//}
 
     // 2. Clear all topology data
     nodes.clear();   // Remove all node pointers from the vector

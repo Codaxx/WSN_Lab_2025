@@ -5,6 +5,7 @@
  */
 
 #include "my_functions.h"
+#define DEBUG 0
 
 void matrix_printer(const unsigned char* const matrix, const unsigned char dim) {
     for (int i = 0; i < dim; i++) {
@@ -144,7 +145,7 @@ void cluster_head_choose(const unsigned char* hop_template, const unsigned num_c
                 rssi_criteria[i] += (float)rssi_matrix[i*dim + j];
             }
         }
-        rssi_criteria[i] = (rssi_criteria[i]+700)/150;
+        rssi_criteria[i] = (rssi_criteria[i]+100*(float)dim)/150;
     }
     /*
     matrix_printer(matrix_hop1, dim);
@@ -470,7 +471,7 @@ void extract_matrix(const unsigned char* org_adjacent, const unsigned char dim, 
     }
 }
 
-void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table, unsigned char* head_list) {
+void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table) {
     // data transform
     const unsigned char low_dim = dim-1;
     unsigned char temp_adjacent[dim*dim];
@@ -481,6 +482,8 @@ void from_rssi_to_link(const short* rssi, const float* battery, const unsigned c
     memset(master, 0, low_dim*sizeof(unsigned char));
 
     rssi_to_adjacent(rssi, temp_adjacent, dim);
+#if DEBUG
+    printf("input rssi: \n");
     for (int i=0; i<dim; i++) {
         for (int j=0; j<dim; j++) {
             printf("%d ", rssi[i*dim+j]);
@@ -488,36 +491,48 @@ void from_rssi_to_link(const short* rssi, const float* battery, const unsigned c
         printf("\n");
     }
     printf("--------------------------------\n");
-    // for (int i=0; i<dim; i++) {
-    //     for (int j=0; j<dim; j++) {
-    //         printf("%d ", temp_adjacent[i*dim+j]);
-    //     }
-    //     printf("\n");
-    // }
-    // printf("--------------------------------\n");
-    extract_matrix(temp_adjacent, dim, adjacent, master);
+    printf("0_1 adjacent matrix: \n");
+    for (int i=0; i<dim; i++) {
+        for (int j=0; j<dim; j++) {
+            printf("%d ", temp_adjacent[i*dim+j]);
+        }
+        printf("\n");
+    }
+    printf("--------------------------------\n");
+#endif
 
+    extract_matrix(temp_adjacent, dim, adjacent, master);
+    printf("extracted adjacent matrix: \n");
     for (int i=0; i<low_dim; i++) {
         for (int j=0; j<low_dim; j++) {
             printf("%d ", adjacent[i*low_dim+j]);
         }
         printf("\n");
     }
+#if DEBUG
     printf("--------------------------------\n");
-
+    printf("extracted master_connection array: \n");
+    for (int i=0; i<low_dim; i++) {
+        printf("%d ", master[i]);
+    }
+    printf("\n");
+    printf("--------------------------------\n");
+#endif
+    // printf("extracted rssi matrix: \n");
     for (int i=1; i<dim; i++) {
         for (int j=1; j<dim; j++) {
             used_rssi[(i-1)*low_dim+j-1] = rssi[i*dim+j];
+            // printf("%d ", used_rssi[(i-1)*low_dim+j-1]);
         }
+        // printf("\n");
     }
     // printf("-------------------------------\n");
     // select head
     unsigned char temp_head_index[3]={0};
-    printf("ClusterHead: ");
     cluster_head_choose(adjacent, 3, low_dim, master, battery, used_rssi, temp_head_index);
+    printf("ClusterHead: ");
     for (int i=0;i<3;i++) {
         printf("%d ",temp_head_index[i]);
-        head_list[i] = temp_head_index[i];
     }
     printf("\n\r");
     unsigned char temp_head_allocate_node[3*low_dim];
