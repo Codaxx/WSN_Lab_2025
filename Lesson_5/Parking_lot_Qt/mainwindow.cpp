@@ -301,12 +301,10 @@ void MainWindow::receive() {
                 }
             }
 
-            // Change to only receive LinkLost: 1, delete all edges manually
-            // Handle node loss notification
+            // Handle node loss notification, delete all edges connected to the node
             //e.g. LinkLost: 1
             else if (str.contains("LinkLost:")) {
-                int lost_src;
-                // int lost_dest;
+                int lost;
                 // Get the current scene from the GraphWidget to modify the visual graph
                 QGraphicsScene *scene = widget->scene();
 
@@ -314,42 +312,45 @@ void MainWindow::receive() {
                 QStringList list = str.split(QRegExp("\\s"));
                 qDebug() << "Parsed serial input: " << str;
                 if (!list.isEmpty()) {
-
                     qDebug() << "List size: " << list.size();
-
                     for (int i = 0; i < list.size(); i++) {
                         qDebug() << "List value " << i << ": " << list.at(i);
-                        
-                        lost_src = list.at(1).toInt(); 
-                        // Uncheck the corresponding checkbox for the lost source node
-                        switch (lost_src) {
-                            case 0: ui->work1->setChecked(false); break;
-                            case 1: ui->work2->setChecked(false); break;
-                            case 2: ui->work3->setChecked(false); break;
-                            case 3: ui->work4->setChecked(false); break;
-                            case 4: ui->work5->setChecked(false); break;
-                            case 5: ui->work6->setChecked(false); break;
-                            case 6: ui->work7->setChecked(false); break;
-                            case 7: ui->work8->setChecked(false); break;
-                        }
-                        // lost_dest = list.at(i+3).toInt();
-                        // qDebug() << "Link lost between nodes: " << lost_src << " and " << lost_dest;
-                        qDebug() << "Node " << lost_src << " is offline, removing all related edges";
-                            
-                        // Remove any matching existing edge from and to the lost node
-                        for (Edge *existing_edge : edges) {
-                            if ((existing_edge->sourceNode() == nodes.at(lost_src)) ||
-                                (existing_edge->destNode() == nodes.at(lost_src))) {
-                                scene->removeItem(existing_edge);
-                            }
-                        }
-
-                        // Add a new red edge to indicate the lost connection
-                        // Edge *edge = new Edge(nodes.at(lost_src),
-                        //         nodes.at(lost_dest), 1);
-                        // scene->addItem(edge);
-                        // edges.push_back(edge);
                     }
+
+                    lost = list.at(1).toInt() + 1;
+                    // Uncheck the corresponding checkbox for the lost source node
+                    switch (lost) {
+                        case 0: ui->work1->setChecked(false); break;
+                        case 1: ui->work2->setChecked(false); break;
+                        case 2: ui->work3->setChecked(false); break;
+                        case 3: ui->work4->setChecked(false); break;
+                        case 4: ui->work5->setChecked(false); break;
+                        case 5: ui->work6->setChecked(false); break;
+                        case 6: ui->work7->setChecked(false); break;
+                        case 7: ui->work8->setChecked(false); break;
+                    }
+                    qDebug() << "Node " << lost << " is offline, removing all related edges";
+
+                    // Remove any matching existing edge from and to the lost node
+                    for (Edge *edge : edges) {
+                        if ((edge->sourceNode() == nodes.at(lost)) || (edge->destNode() == nodes.at(lost))){
+                            scene->removeItem(edge);
+                            delete edge;
+                        }
+                    }
+                    // for (Edge *existing_edge : edges) {
+                    //     if ((existing_edge->sourceNode() == nodes.at(lost)) ||
+                    //         (existing_edge->destNode() == nodes.at(lost))) {
+                    //         scene->removeItem(existing_edge);
+                    //     }
+                    // }
+                    
+                    // Show error message for 3s
+                    QLabel *errorLabel = new QLabel(this);
+                    errorLabel->setText(QString("Node %1 is offline! Save it!").arg(lost));
+                    errorLabel->setStyleSheet("QLabel {background-color: yellow}");
+                    errorLabel->setGeometry(100, 50, 250, 30);
+                    errorLabel->show();
                 }
             }
 
