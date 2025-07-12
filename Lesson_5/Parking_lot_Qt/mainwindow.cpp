@@ -91,6 +91,7 @@ void MainWindow::on_pushButton_open_clicked() {
     port.setDataBits(DATA_8);
     port.setStopBits(STOP_1);
     port.open(QIODevice::ReadWrite);
+    // ui->textEdit_Status->clear();
 
     if (!port.isOpen())
     {
@@ -329,7 +330,7 @@ void MainWindow::receive() {
                         case 6: ui->work7->setChecked(false); break;
                         case 7: ui->work8->setChecked(false); break;
                     }
-                    qDebug() << "Node " << lost << " is offline, removing all related edges";
+                    qDebug() << "Node" << lost << "is offline, removing all related edges";
 
                     // Remove any matching existing edge from and to the lost node
                     std::vector<Edge*> remaining_edges;
@@ -353,10 +354,11 @@ void MainWindow::receive() {
                     // Show error message for 3s
                     QLabel *errorLabel = new QLabel(this);
                     errorLabel->setText(QString("Node %1 is offline! Save it!").arg(lost));
-                    errorLabel->setStyleSheet("QLabel {background-color: yellow}");
-                    errorLabel->setGeometry(100, 50, 250, 30);
+                    errorLabel->setStyleSheet("QLabel {background-color: yellow; font-weight: bold;}");
+                    errorLabel->setGeometry(1300, 150, 250, 50);
                     errorLabel->show();
-                    QTimer::singleShot(3000, errorLabel, &QLabel::deleteLater);
+                    // Hold the error message for 5s
+                    QTimer::singleShot(5000, errorLabel, &QLabel::deleteLater);
                 }
             }
 
