@@ -130,7 +130,8 @@ public:
     enum NodeType {
         Master,
         ClusterHead,
-        Normal
+        Normal,
+        Offline   // Add node status offline and paint the node red
     };
     //This constructor links the node to the graph view and its parent Mainwindow
     Node(GraphWidget *graphWidget, MainWindow *w, NodeType ntype = Normal);

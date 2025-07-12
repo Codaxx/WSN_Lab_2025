@@ -181,7 +181,7 @@ void MainWindow::receive() {
                     int i = 0;
                     int sensorType = list.at(i+3).toInt();
                     int nodeID = list.at(i+1).toInt();
-                    // When nodeid is fetched, set this node as active
+                    // When node id is fetched, set this node as active
                     switch (nodeID) {
                         case 0: ui->work1->setChecked(true); break;
                         case 1: ui->work2->setChecked(true); break;
@@ -306,6 +306,7 @@ void MainWindow::receive() {
             //e.g. LinkLost: 1
             else if (str.contains("LinkLost:")) {
                 int lost;
+                int lost_node;
                 // Get the current scene from the GraphWidget to modify the visual graph
                 QGraphicsScene *scene = widget->scene();
 
@@ -318,7 +319,7 @@ void MainWindow::receive() {
                         qDebug() << "List value " << i << ": " << list.at(i);
                     }
 
-                    lost = list.at(1).toInt() + 1;
+                    lost = list.at(1).toInt();
                     // Uncheck the corresponding checkbox for the lost source node
                     switch (lost) {
                         case 0: ui->work1->setChecked(false); break;
@@ -330,12 +331,24 @@ void MainWindow::receive() {
                         case 6: ui->work7->setChecked(false); break;
                         case 7: ui->work8->setChecked(false); break;
                     }
-                    qDebug() << "Node" << lost << "is offline, removing all related edges";
+
+                    lost_node = lost +1;
+                    nodes.at(lost_node)->setType(Node::Offline);
+                    qDebug() << "Node" << lost_node << "is offline, removing all related edges";
 
                     // Remove any matching existing edge from and to the lost node
                     std::vector<Edge*> remaining_edges;
                     for (Edge *edge : edges) {
                         if ((edge->sourceNode() == nodes.at(lost)) || (edge->destNode() == nodes.at(lost))){
+                            if (edge->sourceNode()) {
+                                auto &srcEdges = edge->sourceNode()->edges();
+                                srcEdges.removeAll(edge);
+                            }
+
+                            if (edge->destNode()) {
+                                auto &dstEdges = edge->destNode()->edges();
+                                dstEdges.removeAll(edge);
+                            }
                             scene->removeItem(edge);
                             delete edge;
                         } else {
@@ -352,13 +365,13 @@ void MainWindow::receive() {
                     // }
                     
                     // Show error message for 3s
-                    QLabel *errorLabel = new QLabel(this);
-                    errorLabel->setText(QString("Node %1 is offline! Save it!").arg(lost));
-                    errorLabel->setStyleSheet("QLabel {background-color: yellow; font-weight: bold;}");
-                    errorLabel->setGeometry(1300, 150, 250, 50);
-                    errorLabel->show();
-                    // Hold the error message for 5s
-                    QTimer::singleShot(5000, errorLabel, &QLabel::deleteLater);
+                    // QLabel *errorLabel = new QLabel(this);
+                    // errorLabel->setText(QString("Node %1 is offline! Save it!").arg(lost));
+                    // errorLabel->setStyleSheet("QLabel {background-color: yellow; font-weight: bold;}");
+                    // errorLabel->setGeometry(1300, 150, 250, 50);
+                    // errorLabel->show();
+                    // // Hold the error message for 5s
+                    // QTimer::singleShot(5000, errorLabel, &QLabel::deleteLater);
                 }
             }
 
@@ -388,7 +401,7 @@ void MainWindow::receive() {
                 nodes.at(head2)->setType(Node::ClusterHead);
                 nodes.at(head3)->setType(Node::ClusterHead);
 
-                qDebug() << "Assigned cluster heads:" << head1 << head2 << head3;
+                qDebug() << "Assigned cluster heads: Node" << head1 << ", Node" << head2 << "and Node" << head3;
 
                 // Start assigning positions from nodePositions[4]
                 int positionIndex = 4;
@@ -875,6 +888,11 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
         // Regular nodes: light orange
         gradient.setColorAt(0, QColor(255, 204, 153));  // Light Orange
         gradient.setColorAt(1, QColor(205, 133, 63));   // Peru
+        break;
+    case Offline:
+        // Offline nodes: red
+        gradient.setColorAt(0, QColor(139, 0, 0));  // Dark red
+        gradient.setColorAt(1, QColor(105, 105, 105));   // Grey
         break;
     }
 
