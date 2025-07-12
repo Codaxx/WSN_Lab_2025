@@ -582,7 +582,7 @@ PROCESS_THREAD(hello_process, ev, data) {
     while(1) {
       PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
 
-      if(hello_process_cnt >= 10) {
+      if(hello_process_cnt >= 100) {
         LOG_INFO("HELLO process complete. Exiting.\n");
         PROCESS_EXIT();  
       }
@@ -691,7 +691,7 @@ PROCESS_THREAD(delivery_ch_process, ev, data)
     print_local_routing_table();
     print_adjacency_matrix();
     // todo the adjacency_matrix need to stable, rssi need to large -30
-		from_rssi_to_link(rssi, battery, MAX_NODES, (uint8_t*)link_table,head_list,1);
+		from_rssi_to_link(rssi, battery, MAX_NODES, (uint8_t*)link_table,head_list);
     memb_init(&permanent_rt_mem);
     list_init(permanent_rt_table);
     if(node_id == MASTER_NODE_ID)
@@ -702,10 +702,10 @@ PROCESS_THREAD(delivery_ch_process, ev, data)
         rt_entry *e = memb_alloc(&permanent_rt_mem);
         if(e != NULL) {
           
-          linkaddr_copy(&e->dest, &node_index_to_addr[++head_list[i]]);
-          linkaddr_copy(&e->next_hop, &node_index_to_addr[++head_list[i]]);
+          linkaddr_copy(&e->dest    , &node_index_to_addr[head_list[i]+1]);
+          linkaddr_copy(&e->next_hop, &node_index_to_addr[head_list[i]+1]);
           e->tot_hop = 1;
-          e->metric = rssi[++head_list[i]];
+          e->metric = rssi[head_list[i]+1];
           e->seq_no = 1;
           list_add(permanent_rt_table, e);
           uint16_t dest_id = get_node_id_from_linkaddr(&e->dest);
@@ -717,14 +717,8 @@ PROCESS_THREAD(delivery_ch_process, ev, data)
           
       }
       LOG_INFO("+------------------+ ------------------------ +--------------------+\n");
-
-
-
-
       }
       
-
-
 
     }
     advertise_node_addr((uint8_t*)link_table);

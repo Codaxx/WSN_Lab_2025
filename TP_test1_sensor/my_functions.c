@@ -5,11 +5,12 @@
  */
 
 #include "my_functions.h"
+#define DEBUG 0
 
 void matrix_printer(const unsigned char* const matrix, const unsigned char dim) {
     for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
-            printf("%02d ", matrix[i * dim + j]);
+            printf("%03d ", matrix[i * dim + j]);
         }
         printf("\n");
     }
@@ -335,8 +336,8 @@ void from_D2matrix_to_D1matrix(const unsigned char* D2matrix, const unsigned cha
 
 void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, const unsigned char dim){
     for (int i=0; i<dim; i++) {
-        for (int j=0; j<dim; j++) {//
-            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] != 0 ) {
+        for (int j=0; j<dim; j++) {
+            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] >= -75 && rssi_matrix[i*dim+j] != 0) {
                 adjacent[i*dim+j] = 1;
             }else {
                 adjacent[i*dim+j] = 0;
@@ -359,12 +360,18 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
             connection_summary[i] += head_sub_node[i + dim*j];
         }
     }
+    printf("REORGANIZATION\r\n");
+    printf("ClusterHead: ");
+    for (int i=0;i<3;i++) {
+        printf("%d ",head[i]);
+    }
+    printf("\r\n");
     // first sent head id
     for (int i=0; i<num_head; i++) {
         if (master[head[i]] == 1) {
             printf("Newlink %d -> 255\r\n", head[i]);
             can_2_master[head[i]] = 1;
-            res[head[i]+1+0*(dim+1)] = 1;
+            //res[head[i]+1+0*(dim+1)] = 1;
             res[(head[i]+1)*(dim+1)+0] = 1;
         }
         else {
@@ -384,7 +391,7 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
                 printf("Newlink %d -> %d\r\n", head[i], next);
                 can_2_master[head[i]] = 1;
                 res[(head[i]+1)*(dim+1)+next+1] = 1;
-                res[(next+1)*(dim+1)+head[i]+1] = 1;
+                //res[(next+1)*(dim+1)+head[i]+1] = 1;
             }
         }
     }
@@ -395,7 +402,7 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
                 printf("Newlink %d -> %d\r\n",  j, head[i]);
                 can_2_master[j] = 1;
                 res[(j+1)*(dim+1)+head[i]+1] = 1;
-                res[(head[i]+1)*(dim+1)+j+1] = 1;
+                //res[(head[i]+1)*(dim+1)+j+1] = 1;
             }
         }
     }
@@ -440,13 +447,14 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
             //printf("------%d\n\r", unconnected_index[i][0]);
             printf("Newlink %d -> %d\r\n", unconnected_index[i][0], unconnected_index[i][1]);
             res[(unconnected_index[i][0]+1)*(dim+1)+unconnected_index[i][1]+1] = 1;
-            res[(unconnected_index[i][1]+1)*(dim+1)+unconnected_index[i][0]+1] = 1;
+            //res[(unconnected_index[i][1]+1)*(dim+1)+unconnected_index[i][0]+1] = 1;
         }
     }
 }
 
 void death_printer(const unsigned char* adjacent, const unsigned char dim) {
     unsigned char connect_summary[dim];
+    memset(connect_summary, 0, dim*sizeof(char));
     for (int i=0; i<dim; i++) {
         for (int j=0; j<dim; j++) {
             connect_summary[i] += adjacent[i*dim+j];
@@ -454,7 +462,7 @@ void death_printer(const unsigned char* adjacent, const unsigned char dim) {
     }
     for (int i=0; i<dim; i++) {
         if (connect_summary[i] == 0) {
-            printf("Link Lost %d\r\n", i);
+            printf("LinkLost: %d\r\n", i);
         }
     }
 }
@@ -470,7 +478,7 @@ void extract_matrix(const unsigned char* org_adjacent, const unsigned char dim, 
     }
 }
 
-void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table, unsigned char* head_list,int report ) {
+void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table, unsigned char* head_list) {
     // data transform
     const unsigned char low_dim = dim-1;
     unsigned char temp_adjacent[dim*dim];
@@ -481,54 +489,69 @@ void from_rssi_to_link(const short* rssi, const float* battery, const unsigned c
     memset(master, 0, low_dim*sizeof(unsigned char));
 
     rssi_to_adjacent(rssi, temp_adjacent, dim);
+#if DEBUG
+    printf("input rssi: \n");
+    for (int i=0; i<dim; i++) {
+        for (int j=0; j<dim; j++) {
+            printf("%d ", rssi[i*dim+j]);
+        }
+        printf("\n");
+    }
+    printf("--------------------------------\n");
+    printf("0_1 adjacent matrix: \n");
+    for (int i=0; i<dim; i++) {
+        for (int j=0; j<dim; j++) {
+            printf("%d ", temp_adjacent[i*dim+j]);
+        }
+        printf("\n");
+    }
+    printf("--------------------------------\n");
+#endif
 
-    // for (int i=0; i<dim; i++) {
-    //     for (int j=0; j<dim; j++) {
-    //         printf("%d ", temp_adjacent[i*dim+j]);
-    //     }
-    //     printf("\n");
-    // }
-    // printf("--------------------------------\n");
     extract_matrix(temp_adjacent, dim, adjacent, master);
-
-    /*for (int i=0; i<low_dim; i++) {
+    death_printer(adjacent, low_dim);
+#if DEBUG
+    printf("extracted adjacent matrix: \n");
+    for (int i=0; i<low_dim; i++) {
         for (int j=0; j<low_dim; j++) {
             printf("%d ", adjacent[i*low_dim+j]);
         }
         printf("\n");
     }
-    printf("--------------------------------\n");*/
-
+    printf("--------------------------------\n");
+    printf("extracted master_connection array: \n");
+    for (int i=0; i<low_dim; i++) {
+        printf("%d ", master[i]);
+    }
+    printf("\n");
+    printf("--------------------------------\n");
+#endif
+    // printf("extracted rssi matrix: \n");
     for (int i=1; i<dim; i++) {
         for (int j=1; j<dim; j++) {
             used_rssi[(i-1)*low_dim+j-1] = rssi[i*dim+j];
+            // printf("%d ", used_rssi[(i-1)*low_dim+j-1]);
         }
+        // printf("\n");
     }
     // printf("-------------------------------\n");
     // select head
-    unsigned char temp_head_index[3]={0};
-    if(report)
-    {
-        printf("ClusterHead: ");
-    }
-    cluster_head_choose(adjacent, 3, low_dim, master, battery, used_rssi, temp_head_index);
-    for (int i=0;i<3;i++) {
-        if (report)
-        {
-            printf("%d ",temp_head_index[i]);
-        }
-        head_list[i] = temp_head_index[i];
-    }
-    if (report)
-    {
-        printf("\n\r");
-    }
+    //unsigned char temp_head_index[3]={0};
 
+    cluster_head_choose(adjacent, 3, low_dim, master, battery, used_rssi, head_list);
     unsigned char temp_head_allocate_node[3*low_dim];
     memset(temp_head_allocate_node, 0, 3*low_dim*sizeof(unsigned char));
     // allocate groups
-    group_selection(3, temp_head_index, low_dim, adjacent, master, battery, temp_head_allocate_node);
-
-    if(report)
-    {print_link_stage(temp_head_index, 3, temp_head_allocate_node, low_dim, adjacent, master, battery, link_table);}
+    group_selection(3, head_list, low_dim, adjacent, master, battery, temp_head_allocate_node);
+    print_link_stage(head_list, 3, temp_head_allocate_node, low_dim, adjacent, master, battery, link_table);
+#if DEBUG
+    printf("0_1 routing matrix: \n");
+    for (int i=0; i<dim; i++) {
+        for (int j=0; j<dim; j++) {
+            printf("%d ", link_table[i*dim+j]);
+        }
+        printf("\n");
+    }
+    printf("--------------------------------\n");
+#endif
 }
