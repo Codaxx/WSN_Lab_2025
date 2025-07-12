@@ -167,7 +167,8 @@ void MainWindow::receive() {
 
             // Append the time-stamped message to the QTextEdit for status display
             ui->textEdit_Status->append(logLine);
-            ui->textEdit_Status->ensureCursorVisible();  // Auto-scroll to the latest line
+            // ui->textEdit_Status->ensureCursorVisible();  // Auto-scroll to the latest line
+            ui->textEdit_Status->moveCursor(QTextCursor::End);
 
             if(str.contains("SensorType:")){
                 QStringList list = str.split(QRegExp("\\s"));
