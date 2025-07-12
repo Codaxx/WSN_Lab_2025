@@ -330,6 +330,9 @@ void MainWindow::receive() {
                         case 5: ui->work6->setChecked(false); break;
                         case 6: ui->work7->setChecked(false); break;
                         case 7: ui->work8->setChecked(false); break;
+                        default:
+                            qDebug() << "Warning: nodeID out of reach:" << lost;
+                            break;
                     }
 
                     lost_node = lost +1;
