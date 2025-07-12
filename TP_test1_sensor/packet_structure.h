@@ -38,16 +38,16 @@ struct rt_entry_pkt{
 };
 
 
-
+/*
 struct dao_packet {
   	uint8_t type;// Standard C includes:
 	linkaddr_t src;
-	uint8_t hop_count; 
+	//uint8_t hop_count; 
 	uint16_t seq_id; 
 	uint8_t no_entries;
 	rt_entry table; // battery status
 };
-
+*/
 
 //the packet used for intial the set-up process
 struct dio_packet {
