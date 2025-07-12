@@ -337,7 +337,7 @@ void from_D2matrix_to_D1matrix(const unsigned char* D2matrix, const unsigned cha
 void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, const unsigned char dim){
     for (int i=0; i<dim; i++) {
         for (int j=0; j<dim; j++) {
-            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] >= -75 && rssi_matrix[i*dim+j] != 0) {
+            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] >= RSSI_THRESHOLD && rssi_matrix[i*dim+j] != 0) {
                 adjacent[i*dim+j] = 1;
             }else {
                 adjacent[i*dim+j] = 0;
