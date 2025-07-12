@@ -119,12 +119,35 @@ void MainWindow::on_pushButton_open_clicked() {
 }
 
 void MainWindow::on_pushButton_close_clicked() {
-    if (port.isOpen()) port.close();
-    // if (uart->isOpen()) uart->close();
+    // === 1. Close the currently open serial port ===
+    if (port.isOpen()) {
+        port.close();
+    }
+
+    // === 2. Refresh the COM port list ===
+    ui->comboBox_Interface->clear();  // Clear old items
+
+    QList<QextPortInfo> ports = QextSerialEnumerator::getPorts();
+    for (int i = 0; i < ports.size(); i++) {
+        QString portName = ports.at(i).portName;
+        if (portName.contains("ttyACM", Qt::CaseSensitive)) {
+            ui->comboBox_Interface->addItem(portName.toLocal8Bit().constData());
+        }
+    }
+
+    // === 3. Show warning if no ports found ===
+    if (ui->comboBox_Interface->count() == 0){
+        ui->textEdit_Status->append("No USB ports available.\nPlease have another try!");
+    } else {
+        ui->textEdit_Status->append("COM port list refreshed.");
+    }
+
+    // === 4. Update button states ===
     ui->pushButton_close->setEnabled(false);
     ui->pushButton_open->setEnabled(true);
     ui->comboBox_Interface->setEnabled(true);
 }
+
 
 //Message example: Node: 1 SensorType: 1 Value: 12
 void MainWindow::receive() {
@@ -522,6 +545,11 @@ void MainWindow::on_pushButton_reset_clicked()
 
 void MainWindow::resetSystem()
 {
+    // === 0. Close current COM port ===
+    if (port.isOpen()) {
+        port.close();
+    }
+
     // === 1. Reset checkboxes ===
     QVector<QCheckBox *> checkboxes = {
         ui->park1, ui->park2, ui->park3, ui->park4,
@@ -549,28 +577,46 @@ void MainWindow::resetSystem()
     // === 3. Clear status output ===
     ui->textEdit_Status->clear();
 
-    // === 4. Clear existing graph ===
+    // === 4. Clear and reset comboBox_Interface ===
+    ui->comboBox_Interface->clear();
+    QList<QextPortInfo> ports = QextSerialEnumerator::getPorts();
+    for (int i = 0; i < ports.size(); i++) {
+        QString portName = ports.at(i).portName;
+        if (portName.contains("ttyACM", Qt::CaseSensitive)) {
+            ui->comboBox_Interface->addItem(portName.toLocal8Bit().constData());
+        }
+    }
+
+    // Show warning if no ports found
+    if (ui->comboBox_Interface->count() == 0){
+        ui->textEdit_Status->append("No USB ports available.\nPlease have another try!");
+    }
+
+    // Re-enable comboBox and buttons
+    ui->comboBox_Interface->setEnabled(true);
+    ui->pushButton_open->setEnabled(true);
+    ui->pushButton_close->setEnabled(false);
+
+    // === 5. Clear existing graph ===
     if (widget) {
         delete widget;
         widget = nullptr;
     }
 
-    // === 5. Clear dock widgets to prevent duplicates ===
     QList<QDockWidget *> docks = findChildren<QDockWidget *>();
     for (QDockWidget *dock : docks) {
         removeDockWidget(dock);
         delete dock;
     }
 
-    // === 6. Clear node and edge list ===
     nodes.clear();
     edges.clear();
 
-    // === 7. Recreate GraphWidget and network topology ===
+    // === 6. Recreate GraphWidget and network topology ===
     widget = new GraphWidget;
-    createDockWindows();  // This adds the new graph to the UI
+    createDockWindows();
 
-    // === 8. Optionally maximize view again ===
+    // === 7. Re-maximize if needed ===
     this->showMaximized();
 }
 
