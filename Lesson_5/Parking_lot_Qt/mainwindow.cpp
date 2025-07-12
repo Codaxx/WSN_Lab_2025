@@ -260,43 +260,31 @@ void MainWindow::receive() {
                     qDebug() << "List size: " << list.size();
                     for (int i = 0; i < list.size(); i++) {
                         // qDebug() << "List value " << i << ": " << list.at(i);
-                    }
+                        new_src = list.at(1).toInt();
+                        //If nodeID is 255, then it should be node 0 which is the master node, and all other node numbers should be added 1
+                        new_src = (new_src == 255) ? 0 : new_src+1;
+                        new_dest = list.at(3).toInt();
+                        new_dest = (new_dest == 255) ? 0 : new_dest+1;
+                        printf("%d\n",new_src);
+                        printf("%d\n",new_dest);
+                        qDebug() << "New link between nodes: " << new_src << " and " << new_dest;
 
-                    new_src = list.at(1).toInt();
-                    //If nodeID is 255, then it should be node 0 which is the master node, and all other node numbers should be added 1
-                    new_src = (new_src == 255) ? 0 : new_src+1;
-                    new_dest = list.at(3).toInt();
-                    new_dest = (new_dest == 255) ? 0 : new_dest+1;
-                    printf("%d\n",new_src);
-                    printf("%d\n",new_dest);
-                    qDebug() << "New link between nodes: " << new_src << " and " << new_dest;
-
-
-                    // for(Edge *existing_edge: edges){
-                    //     if((existing_edge->sourceNode() == nodes.at(new_src))
-                    //         && (existing_edge->destNode() == nodes.at(new_dest))){
-                    //         if (existing_edge->scene() == scene) {
-                    //             scene->removeItem(existing_edge);
-                    //         }
-                    //         delete existing_edge;
-                    //     }
-                    // }
-                    bool exists = false;
-                    for (Edge *edge : edges) {
-                        if ((edge->sourceNode() == nodes.at(new_src)) && (edge->destNode() == nodes.at(new_dest))){
-                            exists = true;
-                            break;
+                        for(Edge *existing_edge: edges){
+                            if((existing_edge->sourceNode() == nodes.at(new_src))
+                                && (existing_edge->destNode() == nodes.at(new_dest))){
+                                if (existing_edge->scene() == scene) {
+                                    scene->removeItem(existing_edge);
+                                }
+                                delete existing_edge;
+                            }
                         }
-                    }
 
-                    if (!exists) {
                         // Add a new green edge to indicate the lost connection
-                        Edge *edge = new Edge(nodes.at(new_src), nodes.at(new_dest), 0);
+                        Edge *edge = new Edge(nodes.at(new_src),
+                                            nodes.at(new_dest), 0);
                         scene->addItem(edge);
                         edges.push_back(edge);
-                        qDebug() << "New edge added.";
-                    }
-                    
+                    } 
                 }
             }
 
@@ -378,7 +366,7 @@ void MainWindow::receive() {
                 nodes.at(head2)->setType(Node::ClusterHead);
                 nodes.at(head3)->setType(Node::ClusterHead);
 
-                qDebug() << "Assigned cluster heads: Node" << head1 << ", Node"<< head2 << "and Node" << head3;
+                qDebug() << "Assigned cluster heads:" << head1 << head2 << head3;
 
                 // Start assigning positions from nodePositions[4]
                 int positionIndex = 4;
@@ -397,20 +385,35 @@ void MainWindow::receive() {
                 }
             }
 
-            // else if (str.contains("RE-ORGANIZATION")) {
-            //     qDebug() << "Reorganization signal received. Removing all edges.";
+            else if (str.contains("REORGANIZATION")) {
+                qDebug() << "Reorganization signal received. Removing all edges.";
 
-            //     QGraphicsScene *scene = widget->scene();
+                QGraphicsScene *scene = widget->scene();
 
-            //     for (Edge *edge : edges) {
-            //         scene->removeItem(edge);  // Remove the edge from the scene
-            //         delete edge;              // Delete the edge object
-            //     }
+                // disconnect all edges from their source and destination nodes
+                // and remove them from the scene
+                for (Edge *edge : edges) {
+                    Node *src = edge->sourceNode();
+                    Node *dst = edge->destNode();
 
-            //     edges.clear();
+                    if (src) {
+                        auto &srcEdges = src->edges();
+                        srcEdges.removeAll(edge);
+                    }
 
-            //     ui->textEdit_Status->append("Topology cleared due to REORGANIZATION.");
-            // }
+                    if (dst) {
+                        auto &dstEdges = dst->edges();
+                        dstEdges.removeAll(edge);
+                    }
+
+                    scene->removeItem(edge);
+                    delete edge;
+                }
+
+                edges.clear();
+
+                ui->textEdit_Status->append("Topology cleared due to REORGANIZATION.");
+            }
 
             this->repaint();    // Force the GUI to refresh and reflect the latest topology changes
             str.clear();        // Reset the input buffer for the next line of serial data
