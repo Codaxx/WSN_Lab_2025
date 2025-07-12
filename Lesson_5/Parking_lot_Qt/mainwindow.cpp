@@ -754,7 +754,7 @@ Node::Node(GraphWidget *graphWidget, MainWindow *w, NodeType ntype_)
 }
 
 // Return a list of all edges connected to this node
-QVector<Edge *> Node::edges() const
+QVector<Edge *> &Node::edges()
 {
     return edgeList;
 }

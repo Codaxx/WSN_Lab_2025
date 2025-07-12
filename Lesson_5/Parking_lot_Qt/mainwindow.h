@@ -139,7 +139,7 @@ public:
     void addEdge(Edge *edge);
 
     //Return all edges connected to the node
-    QVector<Edge *> edges() const;
+    QVector<Edge *> &edges();
 
     //Custom type identifier used by Qt's graphics view system
     enum { Type = UserType + 1 };
