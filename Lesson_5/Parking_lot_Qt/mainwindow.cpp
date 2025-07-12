@@ -336,7 +336,7 @@ void MainWindow::receive() {
                     }
 
                     lost_node = lost +1;
-                    nodes.at(lost_node)->setType(Node::Offline);
+                    // nodes.at(lost_node)->setType(Node::Offline);
                     qDebug() << "Node" << lost_node << "is offline, removing all related edges";
 
                     // Remove any matching existing edge from and to the lost node
@@ -416,10 +416,12 @@ void MainWindow::receive() {
                         continue;
                     }
 
-                // nodes.at() is indexed from 1 because nodes.at(0) is the master
-                nodes.at(i)->setPos(nodePositions[positionIndex]);
-                nodes.at(i)->setType(Node::Normal);
-                positionIndex++;
+                    // nodes.at() is indexed from 1 because nodes.at(0) is the master
+                    if(nodes.at(i)->getType() != Node::Offline) {
+                        nodes.at(i)->setPos(nodePositions[positionIndex]);
+                        nodes.at(i)->setType(Node::Normal);
+                        positionIndex++;
+                    }
                 }
             }
 
@@ -840,7 +842,11 @@ QPainterPath Node::shape() const
 
 void Node::setType(NodeType newType) {
     ntype = newType;
-    update();  
+    update();
+}
+
+Node::NodeType Node::getType() const {
+    return ntype;
 }
 
 QVariant Node::itemChange(GraphicsItemChange change, const QVariant &value)
@@ -894,8 +900,8 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
         break;
     case Offline:
         // Offline nodes: red
-        gradient.setColorAt(0, QColor(139, 0, 0));  // Dark red
-        gradient.setColorAt(1, QColor(105, 105, 105));   // Grey
+        gradient.setColorAt(0, QColor(255, 99, 71));  // Tomato
+        gradient.setColorAt(1, QColor(139, 0, 0));   // Dark red
         break;
     }
 

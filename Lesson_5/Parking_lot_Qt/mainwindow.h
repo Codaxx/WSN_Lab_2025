@@ -161,6 +161,8 @@ public:
     //Accessor for the node type
     void setType(NodeType newType);
 
+    NodeType getType() const;
+
     //Responsible for drawing the node itself
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
