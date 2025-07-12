@@ -382,6 +382,21 @@ void MainWindow::receive() {
                 }
             }
 
+            else if (str.contains("REORGANIZATION")) {
+                qDebug() << "Reorganization signal received. Removing all edges.";
+
+                QGraphicsScene *scene = widget->scene();
+
+                for (Edge *edge : edges) {
+                    scene->removeItem(edge);  // Remove the edge from the scene
+                    delete edge;              // Delete the edge object
+                }
+
+                edges.clear(); 
+
+                ui->textEdit_Status->append("Topology cleared due to REORGANIZATION.");
+            }
+
             this->repaint();    // Force the GUI to refresh and reflect the latest topology changes
             str.clear();        // Reset the input buffer for the next line of serial data
         }
