@@ -40,6 +40,6 @@ void death_printer(const unsigned char* adjacent, const unsigned char dim);
 void matrix_printer(const unsigned char* const matrix, const unsigned char dim);
 unsigned char value_regularization(unsigned char data, const unsigned char hop_time);
 void extract_matrix(const unsigned char* org_adjacent, const unsigned char dim, unsigned char* res_adjacent, unsigned char* master);
-void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table, unsigned char* head_list);
+void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table, unsigned char* head_list,int report);
 
 #endif

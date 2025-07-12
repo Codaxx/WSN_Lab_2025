@@ -5,7 +5,7 @@
 // Total byte = 8 byte.
 typedef struct rt_entry{
 	struct rt_entry *next;
-	uint8_t type;// Standard C includes:
+	//uint8_t type;// Standard C includes:
 	linkaddr_t dest;
 	linkaddr_t next_hop;
 	uint8_t tot_hop;		// Total hop number for this destination.
@@ -65,7 +65,7 @@ struct advertise_packet{
 	linkaddr_t dest;
 	linkaddr_t advertise_ch;      // current hop count from master
 	uint16_t seq_id;               // sequence ID to prevent loop
-}
+};
 
 
 

@@ -335,8 +335,8 @@ void from_D2matrix_to_D1matrix(const unsigned char* D2matrix, const unsigned cha
 
 void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, const unsigned char dim){
     for (int i=0; i<dim; i++) {
-        for (int j=0; j<dim; j++) {
-            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] >= -60 && rssi_matrix[i*dim+j] != 0) {
+        for (int j=0; j<dim; j++) {//
+            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] != 0 ) {
                 adjacent[i*dim+j] = 1;
             }else {
                 adjacent[i*dim+j] = 0;
@@ -470,7 +470,7 @@ void extract_matrix(const unsigned char* org_adjacent, const unsigned char dim, 
     }
 }
 
-void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table, unsigned char* head_list) {
+void from_rssi_to_link(const short* rssi, const float* battery, const unsigned char dim, unsigned char* link_table, unsigned char* head_list,int report ) {
     // data transform
     const unsigned char low_dim = dim-1;
     unsigned char temp_adjacent[dim*dim];
@@ -507,17 +507,28 @@ void from_rssi_to_link(const short* rssi, const float* battery, const unsigned c
     // printf("-------------------------------\n");
     // select head
     unsigned char temp_head_index[3]={0};
-    printf("ClusterHead: ");
+    if(report)
+    {
+        printf("ClusterHead: ");
+    }
     cluster_head_choose(adjacent, 3, low_dim, master, battery, used_rssi, temp_head_index);
     for (int i=0;i<3;i++) {
-        printf("%d ",temp_head_index[i]);
+        if (report)
+        {
+            printf("%d ",temp_head_index[i]);
+        }
         head_list[i] = temp_head_index[i];
     }
-    printf("\n\r");
+    if (report)
+    {
+        printf("\n\r");
+    }
+
     unsigned char temp_head_allocate_node[3*low_dim];
     memset(temp_head_allocate_node, 0, 3*low_dim*sizeof(unsigned char));
     // allocate groups
     group_selection(3, temp_head_index, low_dim, adjacent, master, battery, temp_head_allocate_node);
 
-    print_link_stage(temp_head_index, 3, temp_head_allocate_node, low_dim, adjacent, master, battery, link_table);
+    if(report)
+    {print_link_stage(temp_head_index, 3, temp_head_allocate_node, low_dim, adjacent, master, battery, link_table);}
 }
