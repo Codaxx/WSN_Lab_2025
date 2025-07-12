@@ -144,7 +144,7 @@ void cluster_head_choose(const unsigned char* hop_template, const unsigned num_c
                 rssi_criteria[i] += (float)rssi_matrix[i*dim + j];
             }
         }
-        rssi_criteria[i] = (rssi_criteria[i]+700)/150;
+        rssi_criteria[i] = (rssi_criteria[i]+100*(float)dim)/150;
     }
     /*
     matrix_printer(matrix_hop1, dim);
@@ -336,7 +336,7 @@ void from_D2matrix_to_D1matrix(const unsigned char* D2matrix, const unsigned cha
 void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, const unsigned char dim){
     for (int i=0; i<dim; i++) {
         for (int j=0; j<dim; j++) {
-            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] >= -75 && rssi_matrix[i*dim+j] != 0) {
+            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] >= -60 && rssi_matrix[i*dim+j] != 0) {
                 adjacent[i*dim+j] = 1;
             }else {
                 adjacent[i*dim+j] = 0;
@@ -481,13 +481,7 @@ void from_rssi_to_link(const short* rssi, const float* battery, const unsigned c
     memset(master, 0, low_dim*sizeof(unsigned char));
 
     rssi_to_adjacent(rssi, temp_adjacent, dim);
-    for (int i=0; i<dim; i++) {
-        for (int j=0; j<dim; j++) {
-            printf("%d ", rssi[i*dim+j]);
-        }
-        printf("\n");
-    }
-    printf("--------------------------------\n");
+
     // for (int i=0; i<dim; i++) {
     //     for (int j=0; j<dim; j++) {
     //         printf("%d ", temp_adjacent[i*dim+j]);
@@ -497,13 +491,13 @@ void from_rssi_to_link(const short* rssi, const float* battery, const unsigned c
     // printf("--------------------------------\n");
     extract_matrix(temp_adjacent, dim, adjacent, master);
 
-    for (int i=0; i<low_dim; i++) {
+    /*for (int i=0; i<low_dim; i++) {
         for (int j=0; j<low_dim; j++) {
             printf("%d ", adjacent[i*low_dim+j]);
         }
         printf("\n");
     }
-    printf("--------------------------------\n");
+    printf("--------------------------------\n");*/
 
     for (int i=1; i<dim; i++) {
         for (int j=1; j<dim; j++) {

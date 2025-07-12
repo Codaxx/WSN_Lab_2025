@@ -60,6 +60,17 @@ struct dio_packet {
 
 
 
+struct advertise_packet{
+	uint8_t type;
+	linkaddr_t dest;
+	linkaddr_t advertise_ch;      // current hop count from master
+	uint16_t seq_id;               // sequence ID to prevent loop
+}
+
+
+
+
+
 typedef struct sensor_data
 {
     uint8_t type;

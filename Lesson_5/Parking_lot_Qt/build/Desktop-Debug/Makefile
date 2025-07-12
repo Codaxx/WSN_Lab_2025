@@ -14,10 +14,10 @@ EQ            = =
 
 CC            = x86_64-linux-gnu-gcc
 CXX           = x86_64-linux-gnu-g++
-DEFINES       = -DQT_QML_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_SQL_LIB -DQT_CORE_LIB
+DEFINES       = -DQESP_NO_UDEV -D__linux__ -DQT_QML_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_SQL_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -g -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -g -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I../../../Parking_lot_Qt -I. -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++
+INCPATH       = -I../../../Parking_lot_Qt -I. -I/nas/ei/home/go49jan/qextserialport/src -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++
 QMAKE         = /usr/lib/qt5/bin/qmake
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -54,11 +54,19 @@ OBJECTS_DIR   = ./
 
 SOURCES       = ../../main.cpp \
 		../../mainwindow.cpp \
-		../../uart.cpp moc_mainwindow.cpp \
+		../../uart.cpp \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport.cpp \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.cpp \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_unix.cpp \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator_linux.cpp moc_mainwindow.cpp \
 		moc_uart.cpp
 OBJECTS       = main.o \
 		mainwindow.o \
 		uart.o \
+		qextserialport.o \
+		qextserialenumerator.o \
+		qextserialport_unix.o \
+		qextserialenumerator_linux.o \
 		moc_mainwindow.o \
 		moc_uart.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
@@ -122,6 +130,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
+		/home/go49jan/qextserialport/src/qextserialport.pri \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/resolve_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_post.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qml_debug.prf \
@@ -140,9 +149,18 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/yacc.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
 		../../../../Parking.pro ../../mainwindow.h \
-		../../uart.h ../../main.cpp \
+		../../uart.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_p.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator_p.h ../../main.cpp \
 		../../mainwindow.cpp \
-		../../uart.cpp
+		../../uart.cpp \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport.cpp \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.cpp \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_unix.cpp \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator_linux.cpp
 QMAKE_TARGET  = parking
 DESTDIR       = 
 TARGET        = parking
@@ -215,6 +233,7 @@ Makefile: ../../Parking.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmak
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
+		/home/go49jan/qextserialport/src/qextserialport.pri \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/resolve_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_post.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qml_debug.prf \
@@ -295,6 +314,7 @@ Makefile: ../../Parking.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmak
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf:
+/home/go49jan/qextserialport/src/qextserialport.pri:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/resolve_config.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_post.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qml_debug.prf:
@@ -328,8 +348,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../../mainwindow.h ../../uart.h $(DISTDIR)/
-	$(COPY_FILE) --parents ../../main.cpp ../../mainwindow.cpp ../../uart.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../../mainwindow.h ../../uart.h /nas/ei/home/go49jan/qextserialport/src/qextserialport.h /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h /nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h /nas/ei/home/go49jan/qextserialport/src/qextserialport_p.h /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator_p.h $(DISTDIR)/
+	$(COPY_FILE) --parents ../../main.cpp ../../mainwindow.cpp ../../uart.cpp /nas/ei/home/go49jan/qextserialport/src/qextserialport.cpp /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.cpp /nas/ei/home/go49jan/qextserialport/src/qextserialport_unix.cpp /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator_linux.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../../mainwindow.ui $(DISTDIR)/
 
 
@@ -362,19 +382,37 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 	x86_64-linux-gnu-g++ -pipe -g -Wall -Wextra -dM -E -o moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: moc_mainwindow.cpp moc_uart.cpp
+compiler_moc_header_make_all: moc_mainwindow.cpp moc_uart.cpp moc_qextserialport.cpp moc_qextserialenumerator.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc_mainwindow.cpp moc_uart.cpp
+	-$(DEL_FILE) moc_mainwindow.cpp moc_uart.cpp moc_qextserialport.cpp moc_qextserialenumerator.cpp
 moc_mainwindow.cpp: ../../mainwindow.h \
 		../../uart.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../mainwindow.h -o moc_mainwindow.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt -I/nas/ei/home/go49jan/qextserialport/src -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../mainwindow.h -o moc_mainwindow.cpp
 
 moc_uart.cpp: ../../uart.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../uart.h -o moc_uart.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt -I/nas/ei/home/go49jan/qextserialport/src -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ../../uart.h -o moc_uart.cpp
+
+moc_qextserialport.cpp: /nas/ei/home/go49jan/qextserialport/src/qextserialport.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt -I/nas/ei/home/go49jan/qextserialport/src -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include /nas/ei/home/go49jan/qextserialport/src/qextserialport.h -o moc_qextserialport.cpp
+
+moc_qextserialenumerator.cpp: /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt/build/Desktop-Debug/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/nas/ei/home/go49jan/group2/Lesson_5/Parking_lot_Qt -I/nas/ei/home/go49jan/qextserialport/src -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtSql -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I. -I/usr/include/c++/13 -I/usr/include/x86_64-linux-gnu/c++/13 -I/usr/include/c++/13/backward -I/usr/lib/gcc/x86_64-linux-gnu/13/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h -o moc_qextserialenumerator.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
@@ -398,16 +436,47 @@ compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_ui
 ####### Compile
 
 main.o: ../../main.cpp ../../mainwindow.h \
-		../../uart.h
+		../../uart.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../../main.cpp
 
 mainwindow.o: ../../mainwindow.cpp ../../mainwindow.h \
 		../../uart.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h \
 		ui_mainwindow.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mainwindow.o ../../mainwindow.cpp
 
-uart.o: ../../uart.cpp ../../uart.h
+uart.o: ../../uart.cpp ../../uart.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o uart.o ../../uart.cpp
+
+qextserialport.o: /nas/ei/home/go49jan/qextserialport/src/qextserialport.cpp /nas/ei/home/go49jan/qextserialport/src/qextserialport.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_p.h \
+		moc_qextserialport.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o qextserialport.o /nas/ei/home/go49jan/qextserialport/src/qextserialport.cpp
+
+qextserialenumerator.o: /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.cpp /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator_p.h \
+		moc_qextserialenumerator.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o qextserialenumerator.o /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.cpp
+
+qextserialport_unix.o: /nas/ei/home/go49jan/qextserialport/src/qextserialport_unix.cpp /nas/ei/home/go49jan/qextserialport/src/qextserialport.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_p.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o qextserialport_unix.o /nas/ei/home/go49jan/qextserialport/src/qextserialport_unix.cpp
+
+qextserialenumerator_linux.o: /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator_linux.cpp /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialport_global.h \
+		/nas/ei/home/go49jan/qextserialport/src/qextserialenumerator_p.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o qextserialenumerator_linux.o /nas/ei/home/go49jan/qextserialport/src/qextserialenumerator_linux.cpp
 
 moc_mainwindow.o: moc_mainwindow.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_mainwindow.o moc_mainwindow.cpp
