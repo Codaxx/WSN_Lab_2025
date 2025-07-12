@@ -522,30 +522,18 @@ void MainWindow::on_pushButton_reset_clicked()
 
 void MainWindow::resetSystem()
 {
-    // 1. Delete the existing GraphWidget and its scene
-    // This removes all graphical items including nodes and edges
-    if (widget) {
-        widget->deleteLater(); // Schedule the widget for deletion
-        widget = nullptr;      // Clear the pointer to avoid dangling reference
-    }
-
-    // 2. Clear all topology data
-    nodes.clear();   // Remove all node pointers from the vector
-    edges.clear();   // Remove all edge pointers from the vector
-
-    // 3. Reset the log window (QTextEdit)
-    ui->textEdit_Status->clear();
-
-    // 4. Uncheck all parking and working checkboxes
+    // === 1. Reset checkboxes ===
     QVector<QCheckBox *> checkboxes = {
-        ui->park1, ui->park2, ui->park3, ui->park4, ui->park5, ui->park6, ui->park7, ui->park8,
-        ui->work1, ui->work2, ui->work3, ui->work4, ui->work5, ui->work6, ui->work7, ui->work8
+        ui->park1, ui->park2, ui->park3, ui->park4,
+        ui->park5, ui->park6, ui->park7, ui->park8,
+        ui->work1, ui->work2, ui->work3, ui->work4,
+        ui->work5, ui->work6, ui->work7, ui->work8
     };
     for (QCheckBox *checkbox : checkboxes) {
-        checkbox->setChecked(false); // Reset to unchecked
+        checkbox->setChecked(false);
     }
 
-    // 5. Reset all LCD displays to 0
+    // === 2. Reset LCD displays ===
     QVector<QLCDNumber *> lcds = {
         ui->value_light1, ui->value_light2, ui->value_light3, ui->value_light4,
         ui->value_light5, ui->value_light6, ui->value_light7, ui->value_light8,
@@ -555,15 +543,35 @@ void MainWindow::resetSystem()
         ui->battery5, ui->battery6, ui->battery7, ui->battery8
     };
     for (QLCDNumber *lcd : lcds) {
-        lcd->display(0); // Display 0 as the default value
+        lcd->display(0);
     }
 
-    // 6. Recreate the GraphWidget and its internal scene
-    // This will also remove the old scene and graphics context
-    widget = new GraphWidget;
+    // === 3. Clear status output ===
+    ui->textEdit_Status->clear();
 
-    // 7. Reinitialize the topology: nodes, edges, initial positions, etc.
-    createDockWindows();
+    // === 4. Clear existing graph ===
+    if (widget) {
+        delete widget;
+        widget = nullptr;
+    }
+
+    // === 5. Clear dock widgets to prevent duplicates ===
+    QList<QDockWidget *> docks = findChildren<QDockWidget *>();
+    for (QDockWidget *dock : docks) {
+        removeDockWidget(dock);
+        delete dock;
+    }
+
+    // === 6. Clear node and edge list ===
+    nodes.clear();
+    edges.clear();
+
+    // === 7. Recreate GraphWidget and network topology ===
+    widget = new GraphWidget;
+    createDockWindows();  // This adds the new graph to the UI
+
+    // === 8. Optionally maximize view again ===
+    this->showMaximized();
 }
 
 // -------------------------------------------------------------------------------------------------------------------------------------------------------------
