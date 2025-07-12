@@ -260,30 +260,42 @@ void MainWindow::receive() {
                     qDebug() << "List size: " << list.size();
                     for (int i = 0; i < list.size(); i++) {
                         // qDebug() << "List value " << i << ": " << list.at(i);
-                        new_src = list.at(1).toInt();
-                        //If nodeID is 255, then it should be node 0 which is the master node, and all other node numbers should be added 1
-                        new_src = (new_src == 255) ? 0 : new_src+1;
-                        new_dest = list.at(3).toInt();
-                        new_dest = (new_dest == 255) ? 0 : new_dest+1;
-                        printf("%d\n",new_src);
-                        printf("%d\n",new_dest);
-                        qDebug() << "New link between nodes: " << new_src << " and " << new_dest;
+                    }
+                    new_src = list.at(1).toInt();
+                    //If nodeID is 255, then it should be node 0 which is the master node, and all other node numbers should be added 1
+                    new_src = (new_src == 255) ? 0 : new_src+1;
+                    new_dest = list.at(3).toInt();
+                    new_dest = (new_dest == 255) ? 0 : new_dest+1;
+                    printf("%d\n",new_src);
+                    printf("%d\n",new_dest);
+                    qDebug() << "New link between nodes: " << new_src << " and " << new_dest;
 
-                        for(Edge *existing_edge: edges){
-                            if((existing_edge->sourceNode() == nodes.at(new_src))
-                                && (existing_edge->destNode() == nodes.at(new_dest))){
-                                if (existing_edge->scene() == scene) {
-                                    scene->removeItem(existing_edge);
-                                }
-                                delete existing_edge;
-                            }
+                        // for(Edge *existing_edge: edges){
+                        //     if((existing_edge->sourceNode() == nodes.at(new_src))
+                        //         && (existing_edge->destNode() == nodes.at(new_dest))){
+                        //         if (existing_edge->scene() == scene) {
+                        //             scene->removeItem(existing_edge);
+                        //         }
+                        //         delete existing_edge;
+                        //     }
+                        // }
+                    
+                        // === Check if edge already exists ===
+                    bool exists = false;
+                    for (Edge *edge : edges) {
+                        if ((edge->sourceNode() == nodes.at(new_src) &&
+                             edge->destNode() == nodes.at(new_dest)) ) {
+                            exists = true;
+                            break;
                         }
+                    }
 
-                        // Add a new green edge to indicate the lost connection
-                        Edge *edge = new Edge(nodes.at(new_src),
-                                            nodes.at(new_dest), 0);
-                        scene->addItem(edge);
-                        edges.push_back(edge);
+                    if (!exists) {
+                    // Add a new green edge to indicate the lost connection
+                    Edge *edge = new Edge(nodes.at(new_src), nodes.at(new_dest), 0);
+                    scene->addItem(edge);
+                    edges.push_back(edge);
+                    qDebug() << "New edge added.";
                     } 
                 }
             }
