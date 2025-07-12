@@ -8,8 +8,6 @@
 #ifndef MY_FUNCTIONS_H
 #define MY_FUNCTIONS_H
 
-#define RSSI_THRESHOLD	-60
-
 #include<string.h>
 #include<stdio.h>
 
