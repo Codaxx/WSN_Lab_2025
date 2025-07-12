@@ -90,7 +90,7 @@ PROCESS_THREAD(sensor_reader, ev, data){
 	static sensor_data packet;
 
 	PROCESS_BEGIN();
-	etimer_set(&sensor_reading_timer, CLOCK_SECOND*3);
+	etimer_set(&sensor_reading_timer, CLOCK_SECOND*8);
 	NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL, 12);
 	nullnet_set_input_callback(&recv_callback);
 
@@ -147,7 +147,7 @@ PROCESS_THREAD(sensor_reader, ev, data){
 		}
 		// code to test head chosen algorithm
 		
-		const short rssi[] = {
+		const static short rssi1[] = {
 			0,-60,0,0,-30,-40,0,0,
 			-60,0,0,-50,-30,0,-73,0,
 			0,0,0,0,-50,-50,0,-50,
@@ -156,24 +156,35 @@ PROCESS_THREAD(sensor_reader, ev, data){
 			-40,0,-50,-30,0,0,0,-45,
 			0,-73,0,-47,-39,0,0,0,
 			0,0,-50,0,-47,-45,0,0};
-		const float battery[7] = {0.8f, 0.7f, 1.0f, 0.9f, 0.8f, 0.6f, 0.8f};
+		const static short rssi2[] = {
+				255, -42, 0, 0, 0, 0, 0, 0,
+				-42, 255, -61, 0, 0, 0, 0, 0,
+				0, -61, 255, -46, 0, 0, 0, 0,
+				0, 0, -46, 255, 0, 0, 0, 0,
+				0, 0, 0, -35, 255, -35, 0, 0,
+				0, 0, 0, 0, 0, 255, 0, 0,
+				0, 0, 0, 0, 0, 0, 255, 0,
+				0, 0, 0, 0, 0, 0, 0, 255,};
+
+		const static float battery[7] = {0.8f, 0.7f, 1.0f, 0.9f, 0.8f, 0.6f, 0.8f};
 		unsigned char link_table[8][8] = {0};
 		unsigned char head_list[3] = {0};
-		from_rssi_to_link(rssi, battery, 8, (uint8_t*)link_table, head_list);
-		for (int i=0;i<8;i++) {
-			for (int j=0;j<8;j++) {
-				printf("%d ",link_table[i][j]);
-			}
-			printf("\n");
+		static bool lllllll = true;
+		if(lllllll){
+			from_rssi_to_link(rssi1, battery, 8, (uint8_t*)link_table, head_list);
+			lllllll = false;
+		}else{
+			from_rssi_to_link(rssi2, battery, 8, (uint8_t*)link_table, head_list);
+			lllllll = true;
 		}
-		printf("===================================================\n\r");
-		for(int i=0;i<3;i++){
-			printf("%d ", head_list[i]);
-		}
-		printf("\n\r");
-		printf("++++++++++++++++++++++++++++++++++++++++++++++++++++\n\r");
 		
-		// route_ready = READY;
+		
+		// printf("ClusterHead: ");
+    	// for (int i=0;i<3;i++) {
+        // 	printf("%d ",head_list[i]);
+   		// }
+    	// printf("\n\r");
+		
 
 		etimer_reset(&sensor_reading_timer);
 	}
