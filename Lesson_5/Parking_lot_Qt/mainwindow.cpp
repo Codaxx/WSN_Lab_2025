@@ -332,12 +332,17 @@ void MainWindow::receive() {
                     qDebug() << "Node " << lost << " is offline, removing all related edges";
 
                     // Remove any matching existing edge from and to the lost node
+                    std::vector<Edge*> remaining_edges;
                     for (Edge *edge : edges) {
                         if ((edge->sourceNode() == nodes.at(lost)) || (edge->destNode() == nodes.at(lost))){
                             scene->removeItem(edge);
                             delete edge;
+                        } else {
+                            remaining_edges.push_back(edge);
                         }
                     }
+                    edges = remaining_edges;
+                
                     // for (Edge *existing_edge : edges) {
                     //     if ((existing_edge->sourceNode() == nodes.at(lost)) ||
                     //         (existing_edge->destNode() == nodes.at(lost))) {
@@ -351,6 +356,7 @@ void MainWindow::receive() {
                     errorLabel->setStyleSheet("QLabel {background-color: yellow}");
                     errorLabel->setGeometry(100, 50, 250, 30);
                     errorLabel->show();
+                    QTimer::singleShot(3000, errorLabel, &QLabel::deleteLater);
                 }
             }
 
