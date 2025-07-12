@@ -126,6 +126,7 @@ void MainWindow::on_pushButton_close_clicked() {
 
     // === 2. Refresh the COM port list ===
     ui->comboBox_Interface->clear();  // Clear old items
+    ui->textEdit_Status->clear(); // Clear old text output
 
     QList<QextPortInfo> ports = QextSerialEnumerator::getPorts();
     for (int i = 0; i < ports.size(); i++) {
@@ -576,6 +577,7 @@ void MainWindow::resetSystem()
 
     // === 3. Clear status output ===
     ui->textEdit_Status->clear();
+    ui->textEdit_Status->append("GUI reset done.");
 
     // === 4. Clear and reset comboBox_Interface ===
     ui->comboBox_Interface->clear();
