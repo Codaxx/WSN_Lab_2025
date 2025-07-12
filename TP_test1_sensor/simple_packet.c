@@ -28,8 +28,17 @@
 static uint16_t last_seq_id = 0;
 static linkaddr_t addr_master;
 static short adjacency_matrix[MAX_NODES][MAX_NODES];  
-static linkaddr_t node_index_to_addr[MAX_NODES]; 
-static int num_known_nodes = 0;
+static  linkaddr_t node_index_to_addr[MAX_NODES] = {
+  {{0xf4, 0xce, 0x36, 0xb0, 0xdf, 0x60, 0xfd, 0x51}}, // node 0
+  {{0xf4, 0xce, 0x36, 0x19, 0x94, 0x72, 0xc0, 0x67}}, // node 1
+  {{0xf4, 0xce, 0x36, 0x7a, 0x82, 0x93, 0xea, 0xcd}}, // node 2
+  {{0xf4, 0xce, 0x36, 0x77, 0x7b, 0x50, 0xa8, 0xc7}}, // node 3
+  {{0xf4, 0xce, 0x36, 0x4a, 0x91, 0x02, 0x45, 0xb3}}, // node 4
+  {{0xf4, 0xce, 0x36, 0x95, 0x48, 0x13, 0xf2, 0x29}}, // node 5
+  {{0xf4, 0xce, 0x36, 0x64, 0x4e, 0x64, 0x2d, 0xae}}, // node 6
+  {{0xf4, 0xce, 0x36, 0x53, 0x21, 0x0a, 0x51, 0x32}}, // node 7
+};
+static int num_known_nodes = 10;
 
 // sensor data transmission
 static uint8_t trans_flag;
@@ -89,7 +98,14 @@ rt_entry * check_local_rt(const linkaddr_t *addr)
 }
 
 uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
-  return ((uint16_t)addr->u8[LINKADDR_SIZE - 2] << 8) | addr->u8[LINKADDR_SIZE - 1];
+  for(int i =0; i<=MAX_NODES;i++)
+  {
+    if(linkaddr_cmp(&node_index_to_addr[i],addr))
+    {
+      return i;
+    }
+  }
+  return -1;
 }
 
 void print_adjacency_matrix()
