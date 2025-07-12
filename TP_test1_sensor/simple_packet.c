@@ -248,13 +248,13 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
   linkaddr_copy(&pkt.rt_src,     &iter->dest);
   for(; iter != NULL; iter = iter->next) {
     
-    uint16_t dest_id = get_node_id_from_linkaddr(&iter->dest);
-    uint16_t next_id = get_node_id_from_linkaddr(&iter->next_hop);
-    printf("  dest: %i\n",dest_id );
-    printf("  next_hop: %i\n", next_id);
-    printf("  tot_hop: %d\n", iter->tot_hop);
-    printf("  metric: %d\n", iter->metric);
-    printf("  seq_no: %u\n", iter->seq_no);
+    //uint16_t dest_id = get_node_id_from_linkaddr(&iter->dest);
+    //uint16_t next_id = get_node_id_from_linkaddr(&iter->next_hop);
+    //printf("  dest: %i\n",dest_id );
+    //printf("  next_hop: %i\n", next_id);
+    //printf("  tot_hop: %d\n", iter->tot_hop);
+    //printf("  metric: %d\n", iter->metric);
+    //printf("  seq_no: %u\n", iter->seq_no);
     
     linkaddr_copy(&pkt.rt_dest,     &iter->dest);
     linkaddr_copy(&pkt.rt_next_hop, &iter->next_hop);
@@ -262,13 +262,7 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
     pkt.rt_metric  = iter->metric;
     pkt.rt_seq_no  = iter->seq_no;
 
-
-    /*printf("Entry %d: dest=%i next_hop=%i hop=%d metric=%d\n",
-      dest_id,
-      next_id,
-      pkt.tot_hop,
-      pkt.metric);*/
-    clock_wait(CLOCK_SECOND / 20);  // 等待 50ms
+    clock_wait(CLOCK_SECOND / 20);  // wait 50 ms
     nullnet_buf = (uint8_t *)&pkt;
     nullnet_len = sizeof(pkt);
     NETSTACK_NETWORK.output(dest); 
@@ -369,15 +363,15 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
   {
     patch_update_local_rt_table(&pkt->src_master,&report_src,pkt->hop_count,rssi,pkt->seq_id);
   }
-
   // print the local_rt_table
   LOG_INFO("Local routing tabel is listed as follw: \r\n");
-  print_local_routing_table();
+  //print_local_routing_table();
+  
   // Forward the packet
   forward_hello(pkt);
+
   // Reply the true source
   routing_report(&report_src, pkt->hop_count, rssi,pkt->seq_id);
-
   leds_single_off(LEDS_LED2);
 }
 
@@ -573,31 +567,27 @@ PROCESS_THREAD(hello_process, ev, data) {
   memb_init(&rt_mem);
   list_init(local_rt_table);
   insert_entry_to_rt_table(&linkaddr_node_addr, &linkaddr_node_addr, 0, 0, 0);
-
   nullnet_set_input_callback(HELLO_Callback);
+
   last_seq_id = 1;
   
   if(node_id == MASTER_NODE_ID) {
     etimer_set(&timer, CLOCK_SECOND * HELLO_INTERVAL);
     while(1) {
       PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
-
       if(hello_process_cnt >= 100) {
         LOG_INFO("HELLO process complete. Exiting.\n");
         PROCESS_EXIT();  
       }
-
       leds_single_on(LEDS_LED1);
       my_hello_pkt.type = HELLO_PACKET;
       linkaddr_copy(&my_hello_pkt.src, &linkaddr_node_addr);
       linkaddr_copy(&my_hello_pkt.src_master, &linkaddr_node_addr);
       my_hello_pkt.hop_count = 0;
       my_hello_pkt.seq_id = last_seq_id++;
-
       forward_hello(&my_hello_pkt);
       LOG_INFO("MASTER broadcasted HELLO %d\r\n", hello_process_cnt+1);
       leds_single_off(LEDS_LED1);
-
       hello_process_cnt++;
       etimer_reset(&timer);
     }
