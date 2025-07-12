@@ -126,7 +126,6 @@ void MainWindow::on_pushButton_close_clicked() {
 
     // === 2. Refresh the COM port list ===
     ui->comboBox_Interface->clear();  // Clear old items
-    ui->textEdit_Status->clear(); // Clear old text output
 
     QList<QextPortInfo> ports = QextSerialEnumerator::getPorts();
     for (int i = 0; i < ports.size(); i++) {
@@ -256,6 +255,7 @@ void MainWindow::receive() {
                 //Extract node IDs from the string
                 QStringList list = str.split(QRegExp("\\s"));
                 qDebug() << "Parsed serial input: " << str;
+
                 if (!list.isEmpty()) {
                     qDebug() << "List size: " << list.size();
                     for (int i = 0; i < list.size(); i++) {
@@ -271,8 +271,11 @@ void MainWindow::receive() {
 
                         for(Edge *existing_edge: edges){
                             if((existing_edge->sourceNode() == nodes.at(new_src))
-                                     && (existing_edge->destNode() == nodes.at(new_dest))){
-                                scene->removeItem(existing_edge);
+                                && (existing_edge->destNode() == nodes.at(new_dest))){
+                                if (existing_edge->scene() == scene) {
+                                    scene->removeItem(existing_edge);
+                                }
+                                delete existing_edge;
                             }
                         }
 
@@ -382,20 +385,20 @@ void MainWindow::receive() {
                 }
             }
 
-            else if (str.contains("REORGANIZATION")) {
-                qDebug() << "Reorganization signal received. Removing all edges.";
+            // else if (str.contains("RE-ORGANIZATION")) {
+            //     qDebug() << "Reorganization signal received. Removing all edges.";
 
-                QGraphicsScene *scene = widget->scene();
+            //     QGraphicsScene *scene = widget->scene();
 
-                for (Edge *edge : edges) {
-                    scene->removeItem(edge);  // Remove the edge from the scene
-                    delete edge;              // Delete the edge object
-                }
+            //     for (Edge *edge : edges) {
+            //         scene->removeItem(edge);  // Remove the edge from the scene
+            //         delete edge;              // Delete the edge object
+            //     }
 
-                edges.clear(); 
+            //     edges.clear();
 
-                ui->textEdit_Status->append("Topology cleared due to REORGANIZATION.");
-            }
+            //     ui->textEdit_Status->append("Topology cleared due to REORGANIZATION.");
+            // }
 
             this->repaint();    // Force the GUI to refresh and reflect the latest topology changes
             str.clear();        // Reset the input buffer for the next line of serial data
@@ -601,6 +604,14 @@ void MainWindow::resetSystem()
         QString portName = ports.at(i).portName;
         if (portName.contains("ttyACM", Qt::CaseSensitive)) {
             ui->comboBox_Interface->addItem(portName.toLocal8Bit().constData());
+        }
+    }
+
+    // Clear background color of all graphbox
+    for (int i = 1; i < 9; i++) {
+        QGroupBox *slot = findChild<QGroupBox *>(QString("slot_%1").arg(i));
+        if (slot) {
+            slot->setStyleSheet("");
         }
     }
 
@@ -886,8 +897,9 @@ void Edge::adjust()
     prepareGeometryChange();
 
     // Offset the edge endpoints slightly away from the node centers to avoid drawing directly over the node graphics
+    qreal nodeRadius = 20;      // Change this value if node radius changes
     if (length > qreal(20.)) {
-        QPointF edgeOffset((line.dx() * 10) / length, (line.dy() * 10) / length);
+        QPointF edgeOffset((line.dx() * nodeRadius) / length, (line.dy() * nodeRadius) / length);
         sourcePoint = line.p1() + edgeOffset;
         destPoint = line.p2() - edgeOffset;
     } else {
