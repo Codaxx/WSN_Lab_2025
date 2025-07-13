@@ -1,4 +1,4 @@
-CONTIKI_PROJECT =master
+CONTIKI_PROJECT = simple_packet
 all: $(CONTIKI_PROJECT)
 
 CONTIKI = $(HOME)/contiki-ng
