@@ -47,7 +47,7 @@ static int global_index;
 static int distance_av_0, light_av_0, temperature_av_0;
 static int distance_av_1, light_av_1, temperature_av_1;
 static sensor_data recv_message;
-const float battery[MASTER_NODE_ID] = {0.8f,0.9f, 0.7f, 1.0f, 0.9f, 0.8f, 0.6f, 0.8f,0.3f,0.6f};
+const float battery[MAX_NODES] = {0.8f,0.9f, 0.7f, 1.0f, 0.9f, 0.8f, 0.6f, 0.8f};
 
 LIST(local_rt_table);
 MEMB(rt_mem,rt_entry,MAX_NODES);
