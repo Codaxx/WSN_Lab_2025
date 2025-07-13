@@ -41,8 +41,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     }
 
     // Get available COM Ports
-    // this->uart = new Uart(this);
-    // QList<QextPortInfo> ports = uart->getUSBPorts();
     QList<QextPortInfo> ports = QextSerialEnumerator::getPorts();
     for (int i = 0; i < ports.size(); i++) {
         QString portName = ports.at(i).portName;
@@ -99,17 +97,6 @@ void MainWindow::on_pushButton_open_clicked() {
         error.show();
         return;
     }
-
-    // Initialize UART connection
-    // QString portname = "/dev/";
-    // portname.append(ui->comboBox_Interface->currentText());
-    // uart->open(portname);
-    // if (!uart->isOpen())
-    // {
-    //     error.setText("Open UART port unsuccessful, try again!");
-    //     error.show();
-    //     return;
-    // }
 
     //Once data is sensed, trigger mainwindow receive function and read serial data
     QObject::connect(&port, SIGNAL(readyRead()), this, SLOT(receive()));
@@ -516,7 +503,6 @@ void MainWindow::createDockWindows()
 
 
 void MainWindow::send(QByteArray data) {
-    // uart->send(data);
     port.write(data);
 
     qint64 bytesWritten = port.write(data);
