@@ -30,8 +30,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     // Collect all checkboxes into a vector
     QVector<QCheckBox *> checkboxes = {
-        ui->park1, ui->park2, ui->park3, ui->park4, ui->park5, ui->park6, ui->park7, ui->park8,
-        ui->work1, ui->work2, ui->work3, ui->work4, ui->work5, ui->work6, ui->work7, ui->work8
+        ui->park1, ui->park2, ui->park3, ui->park4, ui->park5, ui->park6, ui->park7,
+        ui->work1, ui->work2, ui->work3, ui->work4, ui->work5, ui->work6, ui->work7
     };
 
     // Disable mouse click for each checkbox
@@ -184,7 +184,6 @@ void MainWindow::receive() {
                         case 5: ui->work5->setChecked(true); break;
                         case 6: ui->work6->setChecked(true); break;
                         case 7: ui->work7->setChecked(true); break;
-                        case 8: ui->work8->setChecked(true); break;
                     }
 
                     int battery = list.at(i+7).toInt();
@@ -196,7 +195,6 @@ void MainWindow::receive() {
                     case 5: ui->battery5->display(battery); break;
                     case 6: ui->battery6->display(battery); break;
                     case 7: ui->battery7->display(battery); break;
-                    case 8: ui->battery8->display(battery); break;
                     }
                     qDebug() << "Battery level: " << QString::number(battery);
 
@@ -215,7 +213,6 @@ void MainWindow::receive() {
                                 case 5: ui->value_light5->display(value); break;
                                 case 6: ui->value_light6->display(value); break;
                                 case 7: ui->value_light7->display(value); break;
-                                case 8: ui->value_light8->display(value); break;
                             }
                             qDebug() << "Light sensor value: " << QString::number(value);
                             break;
@@ -230,7 +227,6 @@ void MainWindow::receive() {
                                 case 5: ui->value_distance5->display(value); break;
                                 case 6: ui->value_distance6->display(value); break;
                                 case 7: ui->value_distance7->display(value); break;
-                                case 8: ui->value_distance8->display(value); break;
                             }
                             qDebug() << "Distance sensor value: " << QString::number(value);
                             break;
@@ -332,7 +328,6 @@ void MainWindow::receive() {
                         case 5: ui->work5->setChecked(false); break;
                         case 6: ui->work6->setChecked(false); break;
                         case 7: ui->work7->setChecked(false); break;
-                        case 8: ui->work8->setChecked(false); break;
                         default:
                             qDebug() << "Warning: nodeID out of reach:" << lost;
                             break;
@@ -402,15 +397,6 @@ void MainWindow::receive() {
                 nodes.at(head2)->setPos(nodePositions[2]);    
                 nodes.at(head3)->setPos(nodePositions[3]);
 
-                // if(nodes.at(head1)->getType() != Node::Offline) {
-                //     nodes.at(head1)->setType(Node::ClusterHead);
-                // }
-                // if(nodes.at(head2)->getType() != Node::Offline) {
-                //     nodes.at(head2)->setType(Node::ClusterHead);
-                // }
-                // if(nodes.at(head3)->getType() != Node::Offline) {
-                //     nodes.at(head3)->setType(Node::ClusterHead);
-                // }
                 QVector<int> heads = {head1, head2, head3};
                 for (int head : heads) {
                     if (nodes.at(head)->getType() != Node::Offline) {
@@ -432,7 +418,7 @@ void MainWindow::receive() {
                     // }
 
                     // nodes.at() is indexed from 1 because nodes.at(0) is the master
-                    if(nodes.at(i)->getType() != Node::Offline) {
+                    if(nodes.at(i)->getType() != Node::Offline && nodes.at(i)->getType() != Node::ClusterHead) {
                         nodes.at(i)->setPos(nodePositions[positionIndex]);
                         nodes.at(i)->setType(Node::Normal);
                         positionIndex++;
@@ -497,12 +483,12 @@ void MainWindow::createDockWindows()
     }
 
     // initialize other nodes as Normal
-    for (int i = 4; i < 9; i++) {
+    for (int i = 4; i < 8; i++) {
         nodes.push_back(new Node(widget, this, Node::Normal));
     }
 
     // Add all nodes into the graphics scene for visualization
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 8; i++) {
         scene->addItem(nodes.at(i));
     }
 
@@ -521,10 +507,9 @@ void MainWindow::createDockWindows()
 
     // Group 2: Nodes under cluster head 2
     nodes.at(6)->setPos(nodePositions[6]);
-    nodes.at(7)->setPos(nodePositions[7]);
 
     // Group 3: Node under cluster head 3
-    nodes.at(8)->setPos(nodePositions[8]);
+    nodes.at(7)->setPos(nodePositions[7]);
 
     // Put the GraphWidget into the dock and add it to the main window
     dock->setWidget(widget);
@@ -573,7 +558,6 @@ void MainWindow::evaluateParkingStatus(int nodeID)
                 case 5: ui->park5->setChecked(!state.lastStableOccupied); break;
                 case 6: ui->park6->setChecked(!state.lastStableOccupied); break;
                 case 7: ui->park7->setChecked(!state.lastStableOccupied); break;
-                case 8: ui->park8->setChecked(!state.lastStableOccupied); break;
                 }
 
                 // Log the new confirmed parking state
@@ -594,7 +578,7 @@ void MainWindow::evaluateParkingStatus(int nodeID)
 // Update the background color of each slot depending on the checkbox states
 void MainWindow::updateGraphBoxStyle() {
     // Iterate over slot_1 to slot_8
-    for (int i = 1; i <= 8; i++) {
+    for (int i = 1; i <= 7; i++) {
         // Dynamically access park and work checkboxes using QObject::findChild
         QCheckBox *park = findChild<QCheckBox *>(QString("park%1").arg(i));
         QCheckBox *work = findChild<QCheckBox *>(QString("work%1").arg(i));
@@ -643,9 +627,9 @@ void MainWindow::resetSystem()
     // === 1. Reset checkboxes ===
     QVector<QCheckBox *> checkboxes = {
         ui->park1, ui->park2, ui->park3, ui->park4,
-        ui->park5, ui->park6, ui->park7, ui->park8,
+        ui->park5, ui->park6, ui->park7,
         ui->work1, ui->work2, ui->work3, ui->work4,
-        ui->work5, ui->work6, ui->work7, ui->work8
+        ui->work5, ui->work6, ui->work7
     };
     for (QCheckBox *checkbox : checkboxes) {
         checkbox->setChecked(false);
@@ -654,11 +638,11 @@ void MainWindow::resetSystem()
     // === 2. Reset LCD displays ===
     QVector<QLCDNumber *> lcds = {
         ui->value_light1, ui->value_light2, ui->value_light3, ui->value_light4,
-        ui->value_light5, ui->value_light6, ui->value_light7, ui->value_light8,
+        ui->value_light5, ui->value_light6, ui->value_light7,
         ui->value_distance1, ui->value_distance2, ui->value_distance3, ui->value_distance4,
-        ui->value_distance5, ui->value_distance6, ui->value_distance7, ui->value_distance8,
+        ui->value_distance5, ui->value_distance6, ui->value_distance7,
         ui->battery1, ui->battery2, ui->battery3, ui->battery4,
-        ui->battery5, ui->battery6, ui->battery7, ui->battery8
+        ui->battery5, ui->battery6, ui->battery7
     };
     for (QLCDNumber *lcd : lcds) {
         lcd->display(0);

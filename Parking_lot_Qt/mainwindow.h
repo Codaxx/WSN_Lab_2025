@@ -71,7 +71,7 @@ private:
     void resetSystem();
 
     // Number of nodes in the graph
-    static const int NODE_COUNT = 9;
+    static const int NODE_COUNT = 8;
 
     // Initial positions for each node, fixed as QPointF
     const QPointF nodePositions[NODE_COUNT] = {
@@ -80,10 +80,9 @@ private:
         QPointF(0, -50),         // Node 2  Head position 2
         QPointF(175, -50),       // Node 3  Head position 3
         QPointF(-250, 100),      // Node 4  
-        QPointF(-150, 75),       // Node 5  
-        QPointF(-50, 150),       // Node 6  
-        QPointF(50, 150),        // Node 7  
-        QPointF(200, 125)        // Node 8
+        QPointF(-150, 75),       // Node 5
+        QPointF(0, 150),         // Node 6
+        QPointF(175, 125)        // Node 7
     };
 
 
