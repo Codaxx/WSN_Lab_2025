@@ -28,6 +28,9 @@ typedef struct newnode_packet
   linkaddr_t src;
 }newnode_packet;
 
+
+
+
 typedef struct{
 
 	uint8_t type;// Standard C includes:
@@ -78,6 +81,7 @@ struct advertise_packet{
 	uint8_t type;
 	linkaddr_t dest;
 	linkaddr_t advertise_ch;      // current hop count from master
+	uint16_t tot_hop;
 	uint16_t seq_id;               // sequence ID to prevent loop
 };
 
