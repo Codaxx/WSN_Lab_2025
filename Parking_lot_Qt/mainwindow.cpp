@@ -170,26 +170,26 @@ void MainWindow::receive() {
                     int nodeID = list.at(i+1).toInt();
                     // When node id is fetched, set this node as active
                     switch (nodeID) {
-                        case 0: ui->work1->setChecked(true); break;
-                        case 1: ui->work2->setChecked(true); break;
-                        case 2: ui->work3->setChecked(true); break;
-                        case 3: ui->work4->setChecked(true); break;
-                        case 4: ui->work5->setChecked(true); break;
-                        case 5: ui->work6->setChecked(true); break;
-                        case 6: ui->work7->setChecked(true); break;
-                        case 7: ui->work8->setChecked(true); break;
+                        case 1: ui->work1->setChecked(true); break;
+                        case 2: ui->work2->setChecked(true); break;
+                        case 3: ui->work3->setChecked(true); break;
+                        case 4: ui->work4->setChecked(true); break;
+                        case 5: ui->work5->setChecked(true); break;
+                        case 6: ui->work6->setChecked(true); break;
+                        case 7: ui->work7->setChecked(true); break;
+                        case 8: ui->work8->setChecked(true); break;
                     }
 
                     int battery = list.at(i+7).toInt();
                     switch (nodeID) {
-                    case 0: ui->battery1->display(battery); break;
-                    case 1: ui->battery2->display(battery); break;
-                    case 2: ui->battery3->display(battery); break;
-                    case 3: ui->battery4->display(battery); break;
-                    case 4: ui->battery5->display(battery); break;
-                    case 5: ui->battery6->display(battery); break;
-                    case 6: ui->battery7->display(battery); break;
-                    case 7: ui->battery8->display(battery); break;
+                    case 1: ui->battery1->display(battery); break;
+                    case 2: ui->battery2->display(battery); break;
+                    case 3: ui->battery3->display(battery); break;
+                    case 4: ui->battery4->display(battery); break;
+                    case 5: ui->battery5->display(battery); break;
+                    case 6: ui->battery6->display(battery); break;
+                    case 7: ui->battery7->display(battery); break;
+                    case 8: ui->battery8->display(battery); break;
                     }
                     qDebug() << "Battery level: " << QString::number(battery);
 
@@ -201,14 +201,14 @@ void MainWindow::receive() {
                         case 1:
                             nodeStates[nodeID].light = value;
                             switch (nodeID) {
-                                case 0: ui->value_light1->display(value); break;
-                                case 1: ui->value_light2->display(value); break;
-                                case 2: ui->value_light3->display(value); break;
-                                case 3: ui->value_light4->display(value); break;
-                                case 4: ui->value_light5->display(value); break;
-                                case 5: ui->value_light6->display(value); break;
-                                case 6: ui->value_light7->display(value); break;
-                                case 7: ui->value_light8->display(value); break;
+                                case 1: ui->value_light1->display(value); break;
+                                case 2: ui->value_light2->display(value); break;
+                                case 3: ui->value_light3->display(value); break;
+                                case 4: ui->value_light4->display(value); break;
+                                case 5: ui->value_light5->display(value); break;
+                                case 6: ui->value_light6->display(value); break;
+                                case 7: ui->value_light7->display(value); break;
+                                case 8: ui->value_light8->display(value); break;
                             }
                             qDebug() << "Light sensor value: " << QString::number(value);
                             break;
@@ -216,14 +216,14 @@ void MainWindow::receive() {
                         case 2:
                             nodeStates[nodeID].distance = value;
                             switch (nodeID) {
-                                case 0: ui->value_distance1->display(value); break;
-                                case 1: ui->value_distance2->display(value); break;
-                                case 2: ui->value_distance3->display(value); break;
-                                case 3: ui->value_distance4->display(value); break;
-                                case 4: ui->value_distance5->display(value); break;
-                                case 5: ui->value_distance6->display(value); break;
-                                case 6: ui->value_distance7->display(value); break;
-                                case 7: ui->value_distance8->display(value); break;
+                                case 1: ui->value_distance1->display(value); break;
+                                case 2: ui->value_distance2->display(value); break;
+                                case 3: ui->value_distance3->display(value); break;
+                                case 4: ui->value_distance4->display(value); break;
+                                case 5: ui->value_distance5->display(value); break;
+                                case 6: ui->value_distance6->display(value); break;
+                                case 7: ui->value_distance7->display(value); break;
+                                case 8: ui->value_distance8->display(value); break;
                             }
                             qDebug() << "Distance sensor value: " << QString::number(value);
                             break;
@@ -309,14 +309,14 @@ void MainWindow::receive() {
                     lost = list.at(1).toInt();
                     // Uncheck the corresponding checkbox for the lost source node
                     switch (lost) {
-                        case 0: ui->work1->setChecked(false); break;
-                        case 1: ui->work2->setChecked(false); break;
-                        case 2: ui->work3->setChecked(false); break;
-                        case 3: ui->work4->setChecked(false); break;
-                        case 4: ui->work5->setChecked(false); break;
-                        case 5: ui->work6->setChecked(false); break;
-                        case 6: ui->work7->setChecked(false); break;
-                        case 7: ui->work8->setChecked(false); break;
+                        case 1: ui->work1->setChecked(false); break;
+                        case 2: ui->work2->setChecked(false); break;
+                        case 3: ui->work3->setChecked(false); break;
+                        case 4: ui->work4->setChecked(false); break;
+                        case 5: ui->work5->setChecked(false); break;
+                        case 6: ui->work6->setChecked(false); break;
+                        case 7: ui->work7->setChecked(false); break;
+                        case 8: ui->work8->setChecked(false); break;
                         default:
                             qDebug() << "Warning: nodeID out of reach:" << lost;
                             break;
