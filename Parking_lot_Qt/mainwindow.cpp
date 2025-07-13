@@ -137,7 +137,7 @@ void MainWindow::on_pushButton_close_clicked() {
 }
 
 
-//Message example: Node: 1 SensorType: 1 Value: 12
+//Message example: Node: 1 SensorType: 1 Value: 12 Battery: 80
 void MainWindow::receive() {
     static QString str;
     char ch;
@@ -259,6 +259,16 @@ void MainWindow::receive() {
                     printf("%d\n",new_dest);
                     qDebug() << "New link between nodes: " << new_src << " and " << new_dest;
 
+                    // Revive nodes if they were offline
+                    if (nodes.at(new_src)->getType() == Node::Offline) {
+                        nodes.at(new_src)->setType(Node::Normal); 
+                        qDebug() << "Node" << new_src << "revived, set back to Normal";
+                    }
+                    if (nodes.at(new_dest)->getType() == Node::Offline) {
+                        nodes.at(new_dest)->setType(Node::Normal); 
+                        qDebug() << "Node" << new_dest << "revived, set back to Normal";
+                    }
+
                         // for(Edge *existing_edge: edges){
                         //     if((existing_edge->sourceNode() == nodes.at(new_src))
                         //         && (existing_edge->destNode() == nodes.at(new_dest))){
@@ -269,7 +279,7 @@ void MainWindow::receive() {
                         //     }
                         // }
                     
-                        // === Check if edge already exists ===
+                    // === Check if edge already exists ===
                     bool exists = false;
                     for (Edge *edge : edges) {
                         if ((edge->sourceNode() == nodes.at(new_src) &&
@@ -322,9 +332,8 @@ void MainWindow::receive() {
                             break;
                     }
 
-                    lost_node = lost +1;
-                    // nodes.at(lost_node)->setType(Node::Offline);
-                    qDebug() << "Node" << lost_node << "is offline, removing all related edges";
+                    nodes.at(lost)->setType(Node::Offline);
+                    qDebug() << "Node" << lost << "is offline, removing all related edges";
 
                     // Remove any matching existing edge from and to the lost node
                     std::vector<Edge*> remaining_edges;
