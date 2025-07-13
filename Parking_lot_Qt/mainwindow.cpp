@@ -410,7 +410,7 @@ void MainWindow::receive() {
                 // Start assigning positions from nodePositions[4]
                 int positionIndex = 4;
 
-                // Loop through all possible node IDs in the message, which are 0 ~ 7
+                // Loop through all other nodes and set their type to normal
                 for (int i = 1; i <= 7; ++i) {
                     // Skip the nodes that are cluster heads
                     // if (i == head1 || i == head2 || i == head3) {
@@ -422,6 +422,9 @@ void MainWindow::receive() {
                         nodes.at(i)->setPos(nodePositions[positionIndex]);
                         nodes.at(i)->setType(Node::Normal);
                         positionIndex++;
+                    // } else if (nodes.at(i)->getType() == Node::Offline) {
+                    //     nodes.at(i)->setPos(nodePositions[positionIndex]);
+                    //     positionIndex++;
                     } else {
                         continue;
                     }
