@@ -303,7 +303,6 @@ void MainWindow::receive() {
             //e.g. LinkLost: 1
             else if (str.contains("LinkLost:")) {
                 int lost;
-                int lost_node;
                 // Get the current scene from the GraphWidget to modify the visual graph
                 QGraphicsScene *scene = widget->scene();
 
@@ -316,7 +315,7 @@ void MainWindow::receive() {
                         qDebug() << "List value " << i << ": " << list.at(i);
                     }
 
-                    lost = list.at(1).toInt();
+                    lost = list.at(1).toInt() +1;
                     // Uncheck the corresponding checkbox for the lost source node
                     switch (lost) {
                         case 1: ui->work1->setChecked(false); break;
