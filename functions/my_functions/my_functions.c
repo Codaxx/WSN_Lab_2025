@@ -1,6 +1,6 @@
 /**
  * @file    my_functions.c
- * @brief   realizations of additional used fucntions
+ * @brief   realizations of additionally used fucntions
  * @author  Chi Xia
  */
 
@@ -63,9 +63,6 @@ void hop_matrix(const unsigned char* template, unsigned char* target, const unsi
         matrixA = target;
     }
 }
-
-//static unsigned char combination2[10][2] = {{0, 1},{0, 2},{0, 3},{0, 4},{1, 2},{1, 3},{1,4},{2,3},{2,4},{3,4}};
-//static unsigned char combination3[10][3] = {{0,1,2},{0,1,3},{0,1,4},{0,2,3},{0,2,4},{0,3,4},{1,2,3},{1,2,4},{1,3,4},{2,3,4}};
 
 void ordering(const unsigned char* matrix, unsigned char* const ordered, const unsigned char dim, const float* battery, const float* rssi_criteria) {
     float operating_matrix[dim][2];
@@ -147,12 +144,6 @@ void cluster_head_choose(const unsigned char* hop_template, const unsigned num_c
         }
         rssi_criteria[i] = (rssi_criteria[i]+100*(float)dim)/150;
     }
-    /*
-    matrix_printer(matrix_hop1, dim);
-    matrix_printer(matrix_hop2, dim);
-    matrix_printer(matrix_hop3, dim);
-    */
-
     unsigned char final_value_matrix[dim*dim];
     memset(&final_value_matrix, 0, dim*dim*sizeof(unsigned char));
     for (int i=0;i<dim; i++) {
@@ -337,10 +328,27 @@ void from_D2matrix_to_D1matrix(const unsigned char* D2matrix, const unsigned cha
 void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, const unsigned char dim){
     for (int i=0; i<dim; i++) {
         for (int j=0; j<dim; j++) {
-            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] >= -75 && rssi_matrix[i*dim+j] != 0) {
+            if (rssi_matrix[i*dim+j] != 255 && rssi_matrix[i*dim+j] >= RSSI_LIMITATION && rssi_matrix[i*dim+j] != 0) {
                 adjacent[i*dim+j] = 1;
             }else {
                 adjacent[i*dim+j] = 0;
+            }
+        }
+    }
+    unsigned char temp_hop1[dim*dim], temp_hop2[dim*dim], temp_hop3[dim*dim], temp_hop4[dim*dim];
+    memset(temp_hop1, 0, dim*dim*sizeof(unsigned char));
+    memset(temp_hop2, 0, dim*dim*sizeof(unsigned char));
+    memset(temp_hop3, 0, dim*dim*sizeof(unsigned char));
+    memset(temp_hop4, 0, dim*dim*sizeof(unsigned char));
+    hop_matrix(adjacent, temp_hop1, dim, 1);
+    hop_matrix(adjacent, temp_hop2, dim, 2);
+    hop_matrix(adjacent, temp_hop3, dim, 3);
+    hop_matrix(adjacent, temp_hop4, dim, 4);
+    for (int i=1; i<dim; i++) {
+        if (temp_hop1[i*dim] == 0 && temp_hop2[i*dim] == 0 && temp_hop3[i*dim] == 0 && temp_hop4[i*dim] == 0) {
+            for (int j=0; j<dim; j++) {
+                adjacent[i*dim + j] = 0;
+                adjacent[j*dim + i] = 0;
             }
         }
     }
