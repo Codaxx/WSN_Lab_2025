@@ -168,6 +168,13 @@ void MainWindow::receive() {
                     int i = 0;
                     int sensorType = list.at(i+3).toInt();
                     int nodeID = list.at(i+1).toInt();
+
+                    // Revive node when it was marked offline
+                    if (nodes.at(nodeID)->getType() == Node::Offline) {
+                        nodes.at(nodeID)->setType(Node::Normal);
+                        qDebug() << "Node" << nodeID << "revived, set back to Normal";
+                    }
+
                     // When node id is fetched, set this node as active
                     switch (nodeID) {
                         case 1: ui->work1->setChecked(true); break;
@@ -395,9 +402,16 @@ void MainWindow::receive() {
                 nodes.at(head2)->setPos(nodePositions[2]);    
                 nodes.at(head3)->setPos(nodePositions[3]);
 
-                nodes.at(head1)->setType(Node::ClusterHead);
-                nodes.at(head2)->setType(Node::ClusterHead);
-                nodes.at(head3)->setType(Node::ClusterHead);
+                if(nodes.at(head1)->getType() != Node::Offline) {
+                    nodes.at(head1)->setType(Node::ClusterHead);
+                }
+
+                if(nodes.at(head2)->getType() != Node::Offline) {
+                    nodes.at(head2)->setType(Node::ClusterHead);
+                }
+                if(nodes.at(head3)->getType() != Node::Offline) {
+                    nodes.at(head3)->setType(Node::ClusterHead);
+                }
 
                 qDebug() << "Assigned cluster heads: Node" << head1 << ", Node" << head2 << "and Node" << head3;
 
@@ -405,17 +419,19 @@ void MainWindow::receive() {
                 int positionIndex = 4;
 
                 // Loop through all possible node IDs in the message, which are 0 ~ 7
-                for (int i = 1; i <= 8; ++i) {
+                for (int i = 1; i <= 7; ++i) {
                     // Skip the nodes that are cluster heads
-                    if (i == head1 || i == head2 || i == head3) {
-                        continue;
-                    }
+                    // if (i == head1 || i == head2 || i == head3) {
+                    //     continue;
+                    // }
 
                     // nodes.at() is indexed from 1 because nodes.at(0) is the master
                     if(nodes.at(i)->getType() != Node::Offline) {
                         nodes.at(i)->setPos(nodePositions[positionIndex]);
                         nodes.at(i)->setType(Node::Normal);
                         positionIndex++;
+                    } else {
+                        continue;
                     }
                 }
             }
@@ -544,14 +560,14 @@ void MainWindow::evaluateParkingStatus(int nodeID)
 
                 // Update the checkbox state: checked = free, unchecked = occupied
                 switch (nodeID) {
-                case 0: ui->park1->setChecked(!state.lastStableOccupied); break;
-                case 1: ui->park2->setChecked(!state.lastStableOccupied); break;
-                case 2: ui->park3->setChecked(!state.lastStableOccupied); break;
-                case 3: ui->park4->setChecked(!state.lastStableOccupied); break;
-                case 4: ui->park5->setChecked(!state.lastStableOccupied); break;
-                case 5: ui->park6->setChecked(!state.lastStableOccupied); break;
-                case 6: ui->park7->setChecked(!state.lastStableOccupied); break;
-                case 7: ui->park8->setChecked(!state.lastStableOccupied); break;
+                case 1: ui->park1->setChecked(!state.lastStableOccupied); break;
+                case 2: ui->park2->setChecked(!state.lastStableOccupied); break;
+                case 3: ui->park3->setChecked(!state.lastStableOccupied); break;
+                case 4: ui->park4->setChecked(!state.lastStableOccupied); break;
+                case 5: ui->park5->setChecked(!state.lastStableOccupied); break;
+                case 6: ui->park6->setChecked(!state.lastStableOccupied); break;
+                case 7: ui->park7->setChecked(!state.lastStableOccupied); break;
+                case 8: ui->park8->setChecked(!state.lastStableOccupied); break;
                 }
 
                 // Log the new confirmed parking state
