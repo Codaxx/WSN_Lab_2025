@@ -15,7 +15,7 @@
 
 // Max number of nodes in the network.
 #define MASTER_NODE_ID 64849
-#define RSSSI_TH     -70
+#define RSSSI_TH     -80
 
 
 

@@ -48,7 +48,7 @@ static int global_index;
 static int distance_av_0, light_av_0, temperature_av_0;
 static int distance_av_1, light_av_1, temperature_av_1;
 static sensor_data recv_message;
-static float battery[MAX_NODES] ={1};
+static float battery[MAX_NODES] ={1,1,1,1,1,1,1,1};
 
 LIST(local_rt_table);
 MEMB(rt_mem,rt_entry,MAX_NODES);
@@ -403,7 +403,7 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
     // go through the routing report rt_table, update the local rt table
     // note that next hop would be the packet src 
     patch_update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop+1,pkt->rt_metric,pkt->rt_seq_no);
-    battery[src_index] = pkt->battery/3700;
+    battery[src_index] = (float)pkt->battery/3700;
     leds_single_off(LEDS_LED2);
 
   
@@ -426,7 +426,7 @@ static void SENSOR_PACKET_callback(const void *data, uint16_t len,
 		//LOG_INFO("temperature: [%d](C)\n\r", recv_message.temperature);
 		//LOG_INFO("light: [%d](lux)\n\r", recv_message.light_lux);
 		//LOG_INFO("distance: [%d](cm)\n\r", recv_message.distance);
-    battery[src] = (float)(recv_message.battery/3700);
+    battery[src] = ((float)recv_message.battery/3700);
 
     printf("Received data are from %d:\n\r", get_node_id_from_linkaddr(&recv_message.source));
 		printf("batttery: [%d](mV):\n\r", recv_message.battery);
@@ -601,17 +601,17 @@ PROCESS_THREAD(hello_process, ev, data) {
  
   nullnet_set_input_callback(HELLO_Callback);
 
-  last_seq_id = 1;
   
+  last_seq_id = 1;
   if(!net_is_stable) {
-    battery[0] =  (float) (get_millivolts(saadc_sensor.value(BATTERY_SENSOR))/3700);
+    battery[0] = ((float)get_millivolts(saadc_sensor.value(BATTERY_SENSOR))/3700);
     memset(known_nodes, 0, sizeof(known_nodes));
     etimer_set(&timer, CLOCK_SECOND * HELLO_INTERVAL);
     while(1) {
       PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
       if(hello_process_cnt >= 8) {
         net_is_stable = 1;
-        LOG_INFO("HELLO process complete. Exiting.\n");
+        LOG_INFO("The whole Network is stable\n");
         PROCESS_EXIT();  
       }
       leds_single_on(LEDS_LED1);
@@ -716,6 +716,10 @@ PROCESS_THREAD(delivery_ch_process, ev, data)
     print_local_routing_table();
     print_adjacency_matrix();
     // todo the adjacency_matrix need to stable, rssi need to large -30
+    for(int i=0; i<MAX_NODES;i++){
+      printf("%d",(int)(battery[i]*100));
+    }
+    printf("\n");
 		from_rssi_to_link(rssi, battery, MAX_NODES, (uint8_t*)link_table,head_list);
     memb_init(&permanent_rt_mem);
     list_init(permanent_rt_table);
