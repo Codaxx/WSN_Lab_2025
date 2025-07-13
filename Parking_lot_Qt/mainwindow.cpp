@@ -402,16 +402,22 @@ void MainWindow::receive() {
                 nodes.at(head2)->setPos(nodePositions[2]);    
                 nodes.at(head3)->setPos(nodePositions[3]);
 
-                if(nodes.at(head1)->getType() != Node::Offline) {
-                    nodes.at(head1)->setType(Node::ClusterHead);
+                // if(nodes.at(head1)->getType() != Node::Offline) {
+                //     nodes.at(head1)->setType(Node::ClusterHead);
+                // }
+                // if(nodes.at(head2)->getType() != Node::Offline) {
+                //     nodes.at(head2)->setType(Node::ClusterHead);
+                // }
+                // if(nodes.at(head3)->getType() != Node::Offline) {
+                //     nodes.at(head3)->setType(Node::ClusterHead);
+                // }
+                QVector<int> heads = {head1, head2, head3};
+                for (int head : heads) {
+                    if (nodes.at(head)->getType() != Node::Offline) {
+                        nodes.at(head)->setType(Node::ClusterHead);
+                    }
                 }
 
-                if(nodes.at(head2)->getType() != Node::Offline) {
-                    nodes.at(head2)->setType(Node::ClusterHead);
-                }
-                if(nodes.at(head3)->getType() != Node::Offline) {
-                    nodes.at(head3)->setType(Node::ClusterHead);
-                }
 
                 qDebug() << "Assigned cluster heads: Node" << head1 << ", Node" << head2 << "and Node" << head3;
 
