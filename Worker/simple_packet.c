@@ -38,7 +38,6 @@ static  linkaddr_t node_index_to_addr[MAX_NODES] = {
   {{0xf4, 0xce, 0x36, 0x64, 0x4e, 0x64, 0x2d, 0xae}}, // node 6
   {{0xf4, 0xce, 0x36, 0x53, 0x21, 0x0a, 0x51, 0x32}}, // node 7
 };
-static int num_known_nodes = 10;
 
 // sensor data transmission
 static uint8_t trans_flag;
@@ -47,14 +46,13 @@ static int global_index;
 static int distance_av_0, light_av_0, temperature_av_0;
 static int distance_av_1, light_av_1, temperature_av_1;
 static sensor_data recv_message;
-const float battery[MASTER_NODE_ID] = {0.8f,0.9f, 0.7f, 1.0f, 0.9f, 0.8f, 0.6f, 0.8f,0.3f,0.6f};
+
 
 LIST(local_rt_table);
 MEMB(rt_mem,rt_entry,MAX_NODES);
 
 LIST(permanent_rt_table);
 MEMB(permanent_rt_mem,rt_entry,MAX_NODES);
-
 
 //sensor data 
 void distance_av_cal(){
@@ -126,22 +124,6 @@ void print_adjacency_matrix()
     printf("\n");
   }
 }
-
-/*int get_index_from_addr(const linkaddr_t *addr)
-{
-  for (int i = 0; i < num_known_nodes; i++) {
-    if (linkaddr_cmp(addr, &node_index_to_addr[i])) {
-      return i;
-    }
-  }
-  // 不存在，尝试添加
-  if (num_known_nodes < MAX_NODES) {
-    linkaddr_copy(&node_index_to_addr[num_known_nodes], addr);
-    return num_known_nodes++;
-  }
-  // 超出最大节点数量
-  return -1;
-}*/
 
 const linkaddr_t *get_next_hop_to(const linkaddr_t *dest)
 {
@@ -287,42 +269,6 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
   printf("Sending packet to dest: %i\n", dest_id);
 }
 
-// ch choosing part
-void advertise_node_addr(uint8_t* link_table)
-{
-  for (int i=1;i<num_known_nodes;i++) {
-    int find_flag = 0;
-    static linkaddr_t advertise_ch_addr;
-    for (int dst = 0; dst < num_known_nodes; dst++) {
-      if (link_table[i*MAX_NODES + dst]== 1) {     
-        advertise_ch_addr = node_index_to_addr[dst];
-        find_flag = 1;
-        break;
-      }
-    }
-    if(!find_flag){
-      LOG_WARN("Can't find the routing\n\r");
-      return;
-    }
-    else{
-      LOG_INFO("FIND CONECTION\n\r");
-    }
-
-    struct advertise_packet pkt;
-    pkt.type = ADVERTISE_PACKET;
-    pkt.dest = node_index_to_addr[i]; 
-    pkt.advertise_ch = advertise_ch_addr; 
-    pkt.seq_id = 5;
-    LOG_INFO("Sending ADVERTISE packet:\n");
-    LOG_INFO("  Dest node:       %u\n", get_node_id_from_linkaddr(&node_index_to_addr[i]));
-    LOG_INFO("  CH node:    %u\n", get_node_id_from_linkaddr(&advertise_ch_addr));
-    LOG_INFO("  Seq ID:          %u\n", pkt.seq_id);
-    nullnet_buf = (uint8_t *)&pkt;
-    nullnet_len = sizeof(pkt);
-    NETSTACK_NETWORK.output(&node_index_to_addr[i]);   
-  }
-
-}
 
 // Receive hello packet callback
 // 1.forward hello packet
@@ -403,45 +349,15 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
   }
   patch_update_local_rt_table(src,src,pkt->hop_count,rssi,pkt->seq_id);
 
-  if(node_id == MASTER_NODE_ID)
-  {  
-    LOG_INFO("Master Node get RT_REPORT_PACKET:\n");
-    int src_index = get_node_id_from_linkaddr(&pkt->src);
-    if (src_index == -1) 
-    { 
-      LOG_WARN("Can't find the correct idx\n");
-      return;
-    }
-    // update the adjacency matrix
-    int dst_index = get_node_id_from_linkaddr(&pkt->rt_dest);
-    if (src_index == dst_index) 
-    {
-      adjacency_matrix[src_index][dst_index] = 255;
-    }
-    else
-    {
-      adjacency_matrix[src_index][dst_index] = pkt->rt_metric;
-      adjacency_matrix[dst_index][src_index] = pkt->rt_metric;
-    }
-    // go through the routing report rt_table, update the local rt table
-    // note that next hop would be the packet src 
-    patch_update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop+1,pkt->rt_metric,pkt->rt_seq_no);
-    leds_single_off(LEDS_LED2);
-  }
-  else
-  {
-    // update my own local routing table
-    // since local routing table update, routing report
+  // update my own local routing table
+  // since local routing table update, routing report
 
-    //routing_report(&addr_master, pkt->hop_count, rssi,pkt->seq_id);
-    LOG_INFO("Not the Master Node forwarding RT_REPORT_PACKET:\n");
-    const linkaddr_t *dest = get_next_hop_to(&addr_master);
-    nullnet_buf = (uint8_t *)&pkt;
-    nullnet_len = sizeof(pkt);
-    NETSTACK_NETWORK.output(dest); 
-  }
-
-
+  //routing_report(&addr_master, pkt->hop_count, rssi,pkt->seq_id);
+  LOG_INFO("Not the Master Node forwarding RT_REPORT_PACKET:\n");
+  const linkaddr_t *dest = get_next_hop_to(&addr_master);
+  nullnet_buf = (uint8_t *)&pkt;
+  nullnet_len = sizeof(pkt);
+  NETSTACK_NETWORK.output(dest); 
 }
 
 static void SENSOR_PACKET_callback(const void *data, uint16_t len, 
@@ -547,10 +463,10 @@ static void HELLO_Callback(const void *data, uint16_t len,
 
 PROCESS(hello_process, "HELLO Flooding Process");
 PROCESS(sensro_report_process, "Hello Dummy Process");
-PROCESS(delivery_ch_process, "choosing CH Process");
 
 
-AUTOSTART_PROCESSES(&hello_process, &sensro_report_process,&delivery_ch_process);
+
+AUTOSTART_PROCESSES(&hello_process, &sensro_report_process);
 
 PROCESS_THREAD(hello_process, ev, data) {
   static struct etimer timer;
@@ -680,52 +596,3 @@ PROCESS_THREAD(sensro_report_process, ev, data)
   PROCESS_END();
 }
 
-PROCESS_THREAD(delivery_ch_process, ev, data)
-{
-	static struct etimer choose_timer;
-  PROCESS_BEGIN();
-  etimer_set(&choose_timer, CLOCK_SECOND*3);
-	while(1){
-		PROCESS_WAIT_EVENT();
-    unsigned char head_list[3] ={0};
-    short* rssi = (short*)adjacency_matrix;
-		volatile static unsigned char link_table[MAX_NODES*MAX_NODES]= {0};
-    print_local_routing_table();
-    print_adjacency_matrix();
-    // todo the adjacency_matrix need to stable, rssi need to large -30
-		from_rssi_to_link(rssi, battery, MAX_NODES, (uint8_t*)link_table,head_list);
-    memb_init(&permanent_rt_mem);
-    list_init(permanent_rt_table);
-    if(node_id == MASTER_NODE_ID)
-    {
-      LOG_INFO("+------------------+ Permanent Routing Table: +--------------------+\n");
-      for(int i=0;i<3;i++)
-      {
-        rt_entry *e = memb_alloc(&permanent_rt_mem);
-        if(e != NULL) {
-          
-          linkaddr_copy(&e->dest    , &node_index_to_addr[head_list[i]+1]);
-          linkaddr_copy(&e->next_hop, &node_index_to_addr[head_list[i]+1]);
-          e->tot_hop = 1;
-          e->metric = rssi[head_list[i]+1];
-          e->seq_no = 1;
-          list_add(permanent_rt_table, e);
-          uint16_t dest_id = get_node_id_from_linkaddr(&e->dest);
-          uint16_t next_id = get_node_id_from_linkaddr(&e->next_hop);
-         
-          LOG_INFO("|No.%i | dest:%u | next:%u | tot_hop:%u | rssi:%d | seq:%u |\n",
-                i,dest_id, next_id,
-                e->tot_hop, e->metric, e->seq_no);
-          
-      }
-      LOG_INFO("+------------------+ ------------------------ +--------------------+\n");
-      }
-      
-
-    }
-    advertise_node_addr((uint8_t*)link_table);
-		etimer_reset(&choose_timer);
-	}
-
-	PROCESS_END();
-}
