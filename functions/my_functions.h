@@ -38,7 +38,7 @@ void group_selection(const unsigned char num_cluster, const unsigned char* clust
 void from_D2matrix_to_D1matrix(const unsigned char* D2matrix, const unsigned char D2dim, unsigned char* const D1matrix);
 void rssi_to_adjacent(const signed short* rssi_matrix, unsigned char* adjacent, const unsigned char dim);
 void print_link_stage(const unsigned char* head, const unsigned char num_head, const unsigned char* head_sub_node, const unsigned char dim, const unsigned char* adjacent, const unsigned char* master, const float* battery, unsigned char* const res);
-void death_printer(const unsigned char* adjacent, const unsigned char dim);
+void death_printer(const unsigned char* adjacent, const unsigned char* master, const unsigned char dim);
 void matrix_printer(const unsigned char* const matrix, const unsigned char dim);
 unsigned char value_regularization(unsigned char data, const unsigned char hop_time);
 void extract_matrix(const unsigned char* org_adjacent, const unsigned char dim, unsigned char* res_adjacent, unsigned char* master);

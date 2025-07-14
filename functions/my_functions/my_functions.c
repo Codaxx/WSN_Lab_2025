@@ -369,11 +369,6 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
         }
     }
     printf("REORGANIZATION\r\n");
-    printf("ClusterHead: ");
-    for (int i=0;i<3;i++) {
-        printf("%d ",head[i]);
-    }
-    printf("\r\n");
     // first sent head id
     for (int i=0; i<num_head; i++) {
         if (master[head[i]] == 1) {
@@ -458,9 +453,14 @@ void print_link_stage(const unsigned char* head, const unsigned char num_head, c
             //res[(unconnected_index[i][1]+1)*(dim+1)+unconnected_index[i][0]+1] = 1;
         }
     }
+    printf("ClusterHead: ");
+    for (int i=0;i<3;i++) {
+        printf("%d ",head[i]);
+    }
+    printf("\r\n");
 }
 
-void death_printer(const unsigned char* adjacent, const unsigned char dim) {
+void death_printer(const unsigned char* adjacent, const unsigned char* master, const unsigned char dim) {
     unsigned char connect_summary[dim];
     memset(connect_summary, 0, dim*sizeof(char));
     for (int i=0; i<dim; i++) {
@@ -469,7 +469,7 @@ void death_printer(const unsigned char* adjacent, const unsigned char dim) {
         }
     }
     for (int i=0; i<dim; i++) {
-        if (connect_summary[i] == 0) {
+        if (connect_summary[i] == 0 && master[i] == 0) {
             printf("LinkLost: %d\r\n", i);
         }
     }
@@ -517,7 +517,7 @@ void from_rssi_to_link(const short* rssi, const float* battery, const unsigned c
 #endif
 
     extract_matrix(temp_adjacent, dim, adjacent, master);
-    death_printer(adjacent, low_dim);
+    death_printer(adjacent, master, low_dim);
 #if DEBUG
     printf("extracted adjacent matrix: \n");
     for (int i=0; i<low_dim; i++) {
