@@ -14,6 +14,7 @@ typedef struct rt_entry{
 	// used for constructiong the local routing table
 }rt_entry;
 
+<<<<<<< HEAD
 
 typedef struct heartbeat_packet
 {
@@ -31,6 +32,8 @@ typedef struct newnode_packet
 
 
 
+=======
+>>>>>>> f4f2fdf1e57a0e85130829238400ac08ac7f5c27
 typedef struct{
 
 	uint8_t type;// Standard C includes:
@@ -44,8 +47,12 @@ struct rt_entry_pkt{
 	uint8_t type;// Standard C includes:
 	linkaddr_t src;
 	uint8_t hop_count;
+<<<<<<< HEAD
 	uint16_t seq_id;
 	int battery;  
+=======
+	uint16_t seq_id;  
+>>>>>>> f4f2fdf1e57a0e85130829238400ac08ac7f5c27
 	linkaddr_t rt_src;
 	linkaddr_t rt_dest;
 	linkaddr_t rt_next_hop;
@@ -58,6 +65,7 @@ struct rt_entry_pkt{
 
 //the packet used for intial the set-up process
 struct dio_packet {
+<<<<<<< HEAD
 	uint8_t type;
 	linkaddr_t src;
 	linkaddr_t src_master;                 // original sender (Master node)
@@ -76,16 +84,35 @@ struct dao_packet {
 	rt_entry table; // battery status
 };
 */
+=======
+  uint8_t type;
+  linkaddr_t src;
+  linkaddr_t src_master;                 // original sender (Master node)
+  uint8_t hop_count;             // current hop count from master
+  uint16_t seq_id;               // sequence ID to prevent loops
+};
+
+
+>>>>>>> f4f2fdf1e57a0e85130829238400ac08ac7f5c27
 
 struct advertise_packet{
 	uint8_t type;
 	linkaddr_t dest;
 	linkaddr_t advertise_ch;      // current hop count from master
+<<<<<<< HEAD
 	uint16_t tot_hop;
+=======
+>>>>>>> f4f2fdf1e57a0e85130829238400ac08ac7f5c27
 	uint16_t seq_id;               // sequence ID to prevent loop
 };
 
 
+<<<<<<< HEAD
+=======
+
+
+
+>>>>>>> f4f2fdf1e57a0e85130829238400ac08ac7f5c27
 typedef struct sensor_data
 {
     uint8_t type;

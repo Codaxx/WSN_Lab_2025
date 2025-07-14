@@ -19,12 +19,15 @@
 
 
 
+<<<<<<< HEAD
 // heart beat
 #define TOLERANCE 5
 
 
 
 
+=======
+>>>>>>> f4f2fdf1e57a0e85130829238400ac08ac7f5c27
 // Sensor 
 #define BUFFER_SIZE	3
 #define DIS_THRES	20
@@ -44,6 +47,7 @@
  
  * */
 /* ==== BROADCAST MESSAGE TYPES ==== */
+<<<<<<< HEAD
 #define HELLO_PACKET       1  // Initial broadcast to build neighbor and route table.
 
 
@@ -53,5 +57,14 @@
 #define ADVERTISE_PACKET   4
 #define HEARTBEAT_PACKET   5
 #define NEWNODE_PACKET     6
+=======
+#define HELLO_PACKET 1               // Initial broadcast to build neighbor and route table.
+
+
+/* ==== UNICAST MESSAGE TYPES  ====*/
+#define RT_REPORT_PACKET 2
+#define SENSOR_DATA_PACKET 3
+#define ADVERTISE_PACKET 4
+>>>>>>> f4f2fdf1e57a0e85130829238400ac08ac7f5c27
 
 #endif /* PROJECT_CONF_H_ */
