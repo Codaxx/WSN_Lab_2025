@@ -26,7 +26,7 @@
 
 // used for recording the packet seq, prevent loop
 static uint16_t last_seq_id = 0;
-static linkaddr_t addr_master;
+static linkaddr_t addr_master ={{0xf4, 0xce, 0x36, 0xb0, 0xdf, 0x60, 0xfd, 0x51}};
 
 static short adjacency_matrix[MAX_NODES][MAX_NODES];  
 static  linkaddr_t node_index_to_addr[MAX_NODES] = {
@@ -54,8 +54,8 @@ static float battery[MAX_NODES] ={1};
 LIST(local_rt_table);
 MEMB(rt_mem,rt_entry,MAX_NODES);
 
-LIST(permanent_rt_table);
-MEMB(permanent_rt_mem,rt_entry,MAX_NODES);
+//LIST(permanent_rt_table);
+//MEMB(permanent_rt_mem,rt_entry,MAX_NODES);
 
 // heart beat
 static volatile uint8_t Node_death;
@@ -150,11 +150,11 @@ const linkaddr_t *get_next_hop_to(const linkaddr_t *dest, int is_permanent)
 {
   if(is_permanent)
   {
-    for (rt_entry *e = list_head(permanent_rt_table); e != NULL; e = e->next) {
-      if (linkaddr_cmp(&e->dest, dest)) {
-        return &e->next_hop;
-      }
-    }
+    //for (rt_entry *e = list_head(permanent_rt_table); e != NULL; e = e->next) {
+    //  if (linkaddr_cmp(&e->dest, dest)) {
+    //    return &e->next_hop;
+    //  }
+    //}
   }
   else{
     for (rt_entry *e = list_head(local_rt_table); e != NULL; e = e->next) {
@@ -274,7 +274,8 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
   pkt.battery = get_millivolts(saadc_sensor.value(BATTERY_SENSOR));
   
   rt_entry *iter = list_head(local_rt_table);
-  linkaddr_copy(&pkt.rt_src,     &iter->dest);
+  iter=iter->next;
+  linkaddr_copy(&pkt.rt_src, &iter->dest);
   for(; iter != NULL; iter = iter->next) {
     
     uint16_t dest_id = get_node_id_from_linkaddr(&iter->dest);
@@ -291,7 +292,7 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
     pkt.rt_metric  = iter->metric;
     pkt.rt_seq_no  = iter->seq_no;
 
-    clock_wait(CLOCK_SECOND / 20);  // wait 50 ms
+    //clock_wait(CLOCK_SECOND / 20);  // wait 50 ms
     nullnet_buf = (uint8_t *)&pkt;
     nullnet_len = sizeof(pkt);
     NETSTACK_NETWORK.output(dest); 
@@ -318,6 +319,7 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
     LOG_WARN("low RSSI DAO, rejected\n\r");
     return;
   }
+
   // processing the hello packet info
   leds_single_on(LEDS_LED2);
   struct dio_packet *pkt = (struct dio_packet *)data;
@@ -326,7 +328,7 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
   linkaddr_copy(&report_src, &pkt->src);
   
   
-  if(pkt->seq_id <=1)
+  /*f(pkt->seq_id <=1)
   {
     for (int i = 0; i < MAX_NODES; i++) {
       for (int j = 0; j < MAX_NODES; j++) {
@@ -341,22 +343,32 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
     last_seq_id = pkt->seq_id;
   }
   // Avoid loops: if already seen, drop
-  else if((pkt->seq_id <=last_seq_id) && parent_is_in_rt_table(&report_src)){
+  else */
+  /*if((pkt->seq_id <=last_seq_id) && parent_is_in_rt_table(&report_src)){
     leds_single_off(LEDS_LED2);
     LOG_INFO("The Packet has been Processed\r\n");
     return;
-  }
+  }*/
   last_seq_id = pkt->seq_id;
   // processing the packet info
   
   //pkt->hop_count++;
   linkaddr_copy(&pkt->src, &linkaddr_node_addr);
-
+  printf("--------------------My link-layer address: ");
+  for(int i = 0; i < LINKADDR_SIZE; i++) {
+    printf("%02x", linkaddr_node_addr.u8[i]);
+  }
+  printf("\n");
+  printf("------------------------Pacekt link-layer address: ");
+  for(int i = 0; i < LINKADDR_SIZE; i++) {
+    printf("%02x",pkt->src.u8[i]);
+  }
+  printf("\n");
   // update_local_rt_table(master_node info + hello packet info);
   // flooding connectivity
 
   // adding the hello pkt_src to the routing table
-  patch_update_local_rt_table(&report_src,&report_src,1,rssi,pkt->seq_id);
+  patch_update_local_rt_table(&report_src, &report_src,1,rssi,pkt->seq_id);
 
   // other nodes adding the master node hop to the routing table
   if (!linkaddr_cmp(&report_src, &pkt->src_master))
@@ -369,7 +381,7 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
   
   // Forward the packet
   forward_hello(pkt);
-
+  print_local_routing_table();
   // Reply the true source
   routing_report(&report_src, pkt->hop_count, rssi,pkt->seq_id);
   leds_single_off(LEDS_LED2);
@@ -381,6 +393,7 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
   leds_single_on(LEDS_LED2);
   LOG_INFO("Receiving RT_REPORT_PACEKT:\n");
   struct rt_entry_pkt *pkt = (struct rt_entry_pkt *)data;
+  print_rt_entries_pkt(pkt);
   pkt->hop_count++;
   int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
   // avoid unstalbe link hard decision
@@ -454,16 +467,16 @@ static void ADVERTISE_PACKET_callback(const void *data, uint16_t len,
   if(linkaddr_cmp(&(pkt->dest), &linkaddr_node_addr)) {
     // my dest 
     //linkaddr_cmp(&master_addr,&pkt->advertise_ch);
-    memb_init(&permanent_rt_mem);
-    list_init(permanent_rt_table);
-    rt_entry *e = memb_alloc(&permanent_rt_mem);
-    if(e != NULL) {
+    //memb_init(&permanent_rt_mem);
+    //list_init(permanent_rt_table);
+    //rt_entry *e = memb_alloc(&permanent_rt_mem);
+    /*if(e != NULL) {
       linkaddr_copy(&(e->dest), &addr_master);
       linkaddr_copy(&(e->next_hop), &(pkt->advertise_ch));
       e->tot_hop = pkt->tot_hop;
       e->metric = rssi;
       e->seq_no = 1;
-      list_add(permanent_rt_table, e);
+      //list_add(permanent_rt_table, e);
       uint16_t dest_id = get_node_id_from_linkaddr(&(e->dest));
       uint16_t next_id = get_node_id_from_linkaddr(&(e->next_hop));
       LOG_INFO("+------------------+ Permanent Routing Table: +--------------------+\n");
@@ -479,9 +492,9 @@ static void ADVERTISE_PACKET_callback(const void *data, uint16_t len,
     nullnet_buf = (uint8_t *)pkt;
     nullnet_len = sizeof(struct advertise_packet);
     NETSTACK_NETWORK.output((get_next_hop_to(&(pkt->dest),0)));
-  }
+  }*/
 }
-
+                            }
 
 static void HEARTBEAT_PACKET_callback(const void *data, uint16_t len, 
                             const linkaddr_t *src, const linkaddr_t *dest){
@@ -598,8 +611,8 @@ PROCESS_THREAD(hello_process, ev, data) {
   memb_init(&rt_mem);
   list_init(local_rt_table);
   insert_entry_to_rt_table(&linkaddr_node_addr, &linkaddr_node_addr, 0, 0, 0);
-  memb_init(&permanent_rt_mem);
-  list_init(permanent_rt_table);
+  //memb_init(&permanent_rt_mem);
+  //list_init(permanent_rt_table);
   nullnet_set_input_callback(HELLO_Callback);
 
   last_seq_id = 1;

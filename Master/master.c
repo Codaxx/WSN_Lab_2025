@@ -107,7 +107,7 @@ uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
       return i;
     }
   }
-  LOGS_WARN("I can't find the correct node_id\n\r");
+  LOG_WARN("I can't find the correct node_id\n\r");
   return -1;
 }
 
@@ -249,45 +249,6 @@ bool parent_is_in_rt_table(const linkaddr_t *src)
   return 0;
 }
 
-/*static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uint16_t seq_id)
-{
-  static struct rt_entry_pkt pkt;
-  //memset(&pkt, 0, sizeof(pkt));
-  pkt.type = RT_REPORT_PACKET;
-  linkaddr_copy(&pkt.src, &linkaddr_node_addr);
-  pkt.hop_count = 0;
-  pkt.seq_id = seq_id;
-  pkt.battery = get_millivolts(saadc_sensor.value(BATTERY_SENSOR));
-  
-  rt_entry *iter = list_head(local_rt_table);
-  linkaddr_copy(&pkt.rt_src,     &iter->dest);
-  for(; iter != NULL; iter = iter->next) {
-    
-    //uint16_t dest_id = get_node_id_from_linkaddr(&iter->dest);
-    //uint16_t next_id = get_node_id_from_linkaddr(&iter->next_hop);
-    //printf("  dest: %i\n",dest_id );
-    //printf("  next_hop: %i\n", next_id);
-    //printf("  tot_hop: %d\n", iter->tot_hop);
-    //printf("  metric: %d\n", iter->metric);
-    //printf("  seq_no: %u\n", iter->seq_no);
-    
-    linkaddr_copy(&pkt.rt_dest,     &iter->dest);
-    linkaddr_copy(&pkt.rt_next_hop, &iter->next_hop);
-    pkt.rt_tot_hop = iter->tot_hop;
-    pkt.rt_metric  = iter->metric;
-    pkt.rt_seq_no  = iter->seq_no;
-
-    clock_wait(CLOCK_SECOND / 20);  // wait 50 ms
-    nullnet_buf = (uint8_t *)&pkt;
-    nullnet_len = sizeof(pkt);
-    NETSTACK_NETWORK.output(dest); 
-
-  }
-  LOG_INFO("I have sent RT_REPORT_PACKET\n");
-  uint16_t dest_id = get_node_id_from_linkaddr(dest);
-  printf("Sending packet to dest: %i\n", dest_id);
-}*/
-
 // ch choosing part
 void advertise_node_addr(uint8_t* link_table)
 {
@@ -388,23 +349,22 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
     return;
   }
   patch_update_local_rt_table(src,src,pkt->hop_count,rssi,pkt->seq_id);
-    LOG_INFO("Master Node get RT_REPORT_PACKET:\n");
-    int src_index = get_node_id_from_linkaddr(&pkt->src);
-    if(src_index == -1)
-    {
+  LOG_INFO("Master Node get RT_REPORT_PACKET:\n");
+  int src_index = get_node_id_from_linkaddr(&pkt->src);
+  if(src_index == -1)
+  {
 
-      return;
-  
-    }
+    return;
+  }
 
 
-    known_nodes[src_index] = 1;
+  known_nodes[src_index] = 1;
     // update the adjacency matrix
-    int dst_index = get_node_id_from_linkaddr(&pkt->rt_dest);
-    if(dst_index == -1)
-    {
-      return;
-    }
+  int dst_index = get_node_id_from_linkaddr(&pkt->rt_dest);
+  if(dst_index == -1)
+  {
+    return;
+  }
 
     if (src_index == dst_index) 
     {
@@ -418,8 +378,9 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
     print_adjacency_matrix();
     // go through the routing report rt_table, update the local rt table
     // note that next hop would be the packet src 
-    patch_update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop+1,pkt->rt_metric,pkt->rt_seq_no);
-    battery[src_index] = (float)pkt->battery/3700;
+    
+    //patch_update_local_rt_table(&pkt->rt_dest,src,pkt->rt_tot_hop+1,pkt->rt_metric,pkt->rt_seq_no);
+    //battery[src_index] = (float)pkt->battery/3700;
     leds_single_off(LEDS_LED2);
 
   
@@ -531,8 +492,8 @@ void NEWNODE_PACKET_callback(const void *data, uint16_t len,
     if(!receivd_new_node_packet)
     {
       net_is_stable = 0;
-      memb_init(&rt_mem);
-      list_init(local_rt_table);
+      //memb_init(&rt_mem);
+      //list_init(local_rt_table);
       insert_entry_to_rt_table(&linkaddr_node_addr, &linkaddr_node_addr, 0, 0, 0);
       for (int i = 0; i < MAX_NODES; i++) {
         for (int j = 0; j < MAX_NODES; j++) {
@@ -641,7 +602,9 @@ PROCESS_THREAD(hello_process, ev, data) {
         last_seq_id = 1;
         receivd_new_node_packet = 0;
         hello_process_cnt = 0;
-        net_is_stable = 1;
+        //set for debug
+        net_is_stable = 0;
+        //net_is_stable = 1;
         LOG_INFO("The whole Network is stable\n");
         PROCESS_EXIT();  
       }
@@ -649,6 +612,15 @@ PROCESS_THREAD(hello_process, ev, data) {
       my_hello_pkt.type = HELLO_PACKET;
       linkaddr_copy(&my_hello_pkt.src, &linkaddr_node_addr);
       linkaddr_copy(&my_hello_pkt.src_master, &linkaddr_node_addr);
+      printf("My link-layer address: ");
+      for(int i = 0; i < LINKADDR_SIZE; i++) {
+        printf("%02x", my_hello_pkt.src.u8[i]);
+      }
+      printf("\n");
+
+
+
+
       my_hello_pkt.hop_count = 0;
       my_hello_pkt.seq_id = last_seq_id++;
       forward_hello(&my_hello_pkt);
