@@ -27,6 +27,7 @@
 // used for recording the packet seq, prevent loop
 static uint16_t last_seq_id = 0;
 static linkaddr_t addr_master;
+
 static short adjacency_matrix[MAX_NODES][MAX_NODES];  
 static  linkaddr_t node_index_to_addr[MAX_NODES] = {
   {{0xf4, 0xce, 0x36, 0xb0, 0xdf, 0x60, 0xfd, 0x51}}, // node 0
@@ -38,7 +39,7 @@ static  linkaddr_t node_index_to_addr[MAX_NODES] = {
   {{0xf4, 0xce, 0x36, 0x64, 0x4e, 0x64, 0x2d, 0xae}}, // node 6
   {{0xf4, 0xce, 0x36, 0x53, 0x21, 0x0a, 0x51, 0x32}}, // node 7
 };
-static uint8_t net_rejoin = 0;
+static volatile uint8_t net_rejoin = 0;
 static int num_known_nodes = MAX_NODES;
 
 // sensor data transmission
@@ -105,7 +106,7 @@ rt_entry * check_local_rt(const linkaddr_t *addr)
 uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
   for(int i =0; i<=MAX_NODES;i++)
   {
-    if(linkaddr_cmp(&node_index_to_addr[i],addr))
+    if(linkaddr_cmp(&node_index_to_addr[i], addr))
     {
       return i;
     }
@@ -134,7 +135,16 @@ void print_adjacency_matrix()
   }
 }
 
+int get_index_from_addr(const linkaddr_t *addr)
+{
+  for (int i = 0; i < num_known_nodes; i++) {
+    if (linkaddr_cmp(addr, &node_index_to_addr[i])) {
+      return i;
+    }
+  }
 
+  return -1;
+}
 
 const linkaddr_t *get_next_hop_to(const linkaddr_t *dest, int is_permanent)
 {
@@ -172,7 +182,7 @@ void print_local_routing_table() {
 void forward_hello(struct dio_packet *pkt)
 {
   nullnet_buf = (uint8_t *)pkt;
-  nullnet_len = sizeof(*pkt);
+  nullnet_len = sizeof(pkt);
   NETSTACK_NETWORK.output(NULL);
 }
 
@@ -267,13 +277,13 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
   linkaddr_copy(&pkt.rt_src,     &iter->dest);
   for(; iter != NULL; iter = iter->next) {
     
-    //uint16_t dest_id = get_node_id_from_linkaddr(&iter->dest);
-    //uint16_t next_id = get_node_id_from_linkaddr(&iter->next_hop);
-    //printf("  dest: %i\n",dest_id );
-    //printf("  next_hop: %i\n", next_id);
-    //printf("  tot_hop: %d\n", iter->tot_hop);
-    //printf("  metric: %d\n", iter->metric);
-    //printf("  seq_no: %u\n", iter->seq_no);
+    uint16_t dest_id = get_node_id_from_linkaddr(&iter->dest);
+    uint16_t next_id = get_node_id_from_linkaddr(&iter->next_hop);
+    printf("  dest: %i\n",dest_id );
+    printf("  next_hop: %i\n", next_id);
+    printf("  tot_hop: %d\n", iter->tot_hop);
+    printf("  metric: %d\n", iter->metric);
+    printf("  seq_no: %u\n", iter->seq_no);
     
     linkaddr_copy(&pkt.rt_dest,     &iter->dest);
     linkaddr_copy(&pkt.rt_next_hop, &iter->next_hop);
@@ -318,11 +328,20 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
   
   if(pkt->seq_id <=1)
   {
+    for (int i = 0; i < MAX_NODES; i++) {
+      for (int j = 0; j < MAX_NODES; j++) {
+        adjacency_matrix[i][j] = (i == j) ? 255 : 0;
+      }
+    }
+    memb_init(&rt_mem);
+    list_init(local_rt_table);
+    insert_entry_to_rt_table(&linkaddr_node_addr, &linkaddr_node_addr, 0, 0, 0);
+    memb_init(&permanent_rt_mem);
+    list_init(permanent_rt_table);
     last_seq_id = pkt->seq_id;
   }
-
   // Avoid loops: if already seen, drop
-  if((pkt->seq_id <last_seq_id) && parent_is_in_rt_table(&report_src)){
+  else if((pkt->seq_id <=last_seq_id) && parent_is_in_rt_table(&report_src)){
     leds_single_off(LEDS_LED2);
     LOG_INFO("The Packet has been Processed\r\n");
     return;
@@ -374,7 +393,7 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
   routing_report(&addr_master, pkt->hop_count, rssi,pkt->seq_id);
   LOG_INFO("Not the Master Node forwarding RT_REPORT_PACKET:\n");
   const linkaddr_t *next = get_next_hop_to(&addr_master,0);
-  nullnet_buf = (uint8_t *)&pkt;
+  nullnet_buf = (uint8_t *)pkt;
   nullnet_len = sizeof(pkt);
   NETSTACK_NETWORK.output(next); 
 }
@@ -423,8 +442,8 @@ static void ADVERTISE_PACKET_callback(const void *data, uint16_t len,
   struct advertise_packet *pkt = (struct advertise_packet *)data;
   int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
   LOG_INFO("Geting ADVERTISE packet:\n");
-  LOG_INFO("  Dest node:       %u\n", get_node_id_from_linkaddr(&pkt->dest));
-  LOG_INFO("  CH node:    %u\n", get_node_id_from_linkaddr(&pkt->advertise_ch));
+  LOG_INFO("  Dest node:       %u\n", get_node_id_from_linkaddr(&(pkt->dest)));
+  LOG_INFO("  CH node:    %u\n", get_node_id_from_linkaddr(&(pkt->advertise_ch)));
   LOG_INFO("  Seq ID:          %u\n", pkt->seq_id);
   //LOG_INFO("Hello Packet Process begin\r\n");
   if(rssi <= -75)
@@ -432,21 +451,21 @@ static void ADVERTISE_PACKET_callback(const void *data, uint16_t len,
     LOG_WARN("low RSSI DAO, rejected\n\r");
     return;
   }
-  if(linkaddr_cmp(&pkt->dest, &linkaddr_node_addr)) {
+  if(linkaddr_cmp(&(pkt->dest), &linkaddr_node_addr)) {
     // my dest 
     //linkaddr_cmp(&master_addr,&pkt->advertise_ch);
     memb_init(&permanent_rt_mem);
     list_init(permanent_rt_table);
     rt_entry *e = memb_alloc(&permanent_rt_mem);
     if(e != NULL) {
-      linkaddr_copy(&e->dest, &addr_master);
-      linkaddr_copy(&e->next_hop, &pkt->advertise_ch);
+      linkaddr_copy(&(e->dest), &addr_master);
+      linkaddr_copy(&(e->next_hop), &(pkt->advertise_ch));
       e->tot_hop = pkt->tot_hop;
       e->metric = rssi;
       e->seq_no = 1;
       list_add(permanent_rt_table, e);
-      uint16_t dest_id = get_node_id_from_linkaddr(&e->dest);
-      uint16_t next_id = get_node_id_from_linkaddr(&e->next_hop);
+      uint16_t dest_id = get_node_id_from_linkaddr(&(e->dest));
+      uint16_t next_id = get_node_id_from_linkaddr(&(e->next_hop));
       LOG_INFO("+------------------+ Permanent Routing Table: +--------------------+\n");
       LOG_INFO("|No.0 | dest:%u | next:%u | tot_hop:%u | rssi:%d | tot_hop:%d |seq:%u |\n",
              dest_id, next_id,
@@ -459,7 +478,7 @@ static void ADVERTISE_PACKET_callback(const void *data, uint16_t len,
     // not my dest
     nullnet_buf = (uint8_t *)pkt;
     nullnet_len = sizeof(struct advertise_packet);
-    NETSTACK_NETWORK.output((get_next_hop_to(&pkt->dest,0)));
+    NETSTACK_NETWORK.output((get_next_hop_to(&(pkt->dest),0)));
   }
 }
 
@@ -490,7 +509,7 @@ void NEWNODE_PACKET_callback(const void *data, uint16_t len,
     {
       if(!board_cast_rejoion)
       {
-        nullnet_buf = (uint8_t *)&pkt;
+        nullnet_buf = (uint8_t *)pkt;
         nullnet_len = sizeof(pkt);
         NETSTACK_NETWORK.output(NULL);
         board_cast_rejoion = 1;
@@ -498,7 +517,7 @@ void NEWNODE_PACKET_callback(const void *data, uint16_t len,
       else;
     }
     else{
-      nullnet_buf = (uint8_t *)&pkt;
+      nullnet_buf = (uint8_t *)pkt;
       nullnet_len = sizeof(pkt);
       NETSTACK_NETWORK.output(get_next_hop_to(&addr_master, 0));
     }
@@ -552,15 +571,13 @@ PROCESS(hello_process, "HELLO Flooding Process");
 PROCESS(sensro_report_process, "Hello Dummy Process");
 PROCESS(heart_beat_trans_process, "transmit heart beating signal");
 PROCESS(heartbeat_hearing_process, "Master uses this process to monitor node lost");
-PROCESS(rejoin_process, "Rejoining the network");
+// PROCESS(rejoin_process, "Rejoining the network");
 
 AUTOSTART_PROCESSES(&hello_process, &sensro_report_process,
-                      &heart_beat_trans_process, &heartbeat_hearing_process,&rejoin_process);
+                      &heart_beat_trans_process, &heartbeat_hearing_process);
 
 PROCESS_THREAD(hello_process, ev, data) {
   static struct etimer timer;
-
-
   PROCESS_BEGIN();
   LOG_INFO("HELLO PROCESS BEGIN\n");
   NETSTACK_CONF_RADIO.set_value(RADIO_PARAM_CHANNEL,GROUP_CHANNEL);
@@ -584,17 +601,31 @@ PROCESS_THREAD(hello_process, ev, data) {
   memb_init(&permanent_rt_mem);
   list_init(permanent_rt_table);
   nullnet_set_input_callback(HELLO_Callback);
+
   last_seq_id = 1;
-  etimer_set(&timer, CLOCK_SECOND * HELLO_INTERVAL);
+  etimer_set(&timer, CLOCK_SECOND * 5);
   while(1) {
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
     hello_process_cnt++;
-    if(hello_process_cnt >= 5) {
+    LOG_INFO("hello process round%d\n\r",hello_process_cnt);
+    if(hello_process_cnt > 2) {
       int guess_master_id = get_node_id_from_linkaddr(&addr_master);
-      if(guess_master_id == 65535)
+      if(guess_master_id == 65535 && net_rejoin == 0)
       {
+        LOG_WARN("Missed the hello process, integer rejion proceess\n\r");
         net_rejoin = 1;
-        process_post(&rejoin_process, rejoin_event, NULL);
+        //process_post(&rejoin_process, rejoin_event, NULL);
+      }
+      if(net_rejoin == 1) {
+        printf("BROADCAST LALALALALA\n");
+        static newnode_packet pkt;
+        pkt.type = NEWNODE_PACKET;
+        linkaddr_copy(&(pkt.src), &linkaddr_node_addr);
+        nullnet_buf = (uint8_t *)&pkt;
+        nullnet_len = sizeof(pkt);
+        NETSTACK_NETWORK.output(NULL);
+        hello_process_cnt = 0;
+        net_rejoin = 0;
       }
     }
     etimer_reset(&timer);
@@ -695,22 +726,24 @@ PROCESS_THREAD(heart_beat_trans_process, ev, data){
   PROCESS_END();
 }
 
-PROCESS_THREAD(rejoin_process, ev, data){
-  PROCESS_BEGIN();
-
-  while(1) {
-    PROCESS_WAIT_EVENT();
-    if(ev == rejoin_event) {
-        newnode_packet pkt;
-        pkt.type = NEWNODE_PACKET;
-        linkaddr_copy(&pkt.src, &linkaddr_node_addr);
-        nullnet_buf = (uint8_t *)&pkt;
-        nullnet_len = sizeof(pkt);
-        NETSTACK_NETWORK.output(NULL); 
-    }
-  }
-  PROCESS_END();
-}
+// PROCESS_THREAD(rejoin_process, ev, data){
+//   PROCESS_BEGIN();
+//   static struct etimer timer;
+//   etimer_set(&timer, CLOCK_SECOND*3);
+//   while(1) {
+//     PROCESS_WAIT_EVENT();
+//     if(net_rejoin == 1) {
+//         newnode_packet pkt;
+//         pkt.type = NEWNODE_PACKET;
+//         linkaddr_copy(&pkt.src, &linkaddr_node_addr);
+//         nullnet_buf = (uint8_t *)&pkt;
+//         nullnet_len = sizeof(pkt);
+//         NETSTACK_NETWORK.output(NULL); 
+//     }
+//     etimer_reset(&timer);
+//   }
+//   PROCESS_END();
+// }
 
 PROCESS_THREAD(heartbeat_hearing_process, ev, data){
   PROCESS_BEGIN();
