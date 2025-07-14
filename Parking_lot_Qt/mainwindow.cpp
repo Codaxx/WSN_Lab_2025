@@ -399,9 +399,9 @@ void MainWindow::receive() {
 
                 QVector<int> heads = {head1, head2, head3};
                 for (int head : heads) {
-                    if (nodes.at(head)->getType() != Node::Offline) {
+                    if (nodes.at(head)->getType() == Node::Normal) {
                         nodes.at(head)->setType(Node::ClusterHead);
-                    }
+                    } 
                 }
 
 
@@ -410,23 +410,12 @@ void MainWindow::receive() {
                 // Start assigning positions from nodePositions[4]
                 int positionIndex = 4;
 
-                // Loop through all other nodes and set their type to normal
+                // Loop through all other nodes and assign them positions
                 for (int i = 1; i <= 7; ++i) {
                     // Skip the nodes that are cluster heads
-                    // if (i == head1 || i == head2 || i == head3) {
-                    //     continue;
-                    // }
-
-                    // nodes.at() is indexed from 1 because nodes.at(0) is the master
-                    if(nodes.at(i)->getType() != Node::Offline && nodes.at(i)->getType() != Node::ClusterHead) {
+                    if (i != head1 && i != head2 && i != head3) {
                         nodes.at(i)->setPos(nodePositions[positionIndex]);
-                        nodes.at(i)->setType(Node::Normal);
                         positionIndex++;
-                    // } else if (nodes.at(i)->getType() == Node::Offline) {
-                    //     nodes.at(i)->setPos(nodePositions[positionIndex]);
-                    //     positionIndex++;
-                    } else {
-                        continue;
                     }
                 }
             }
