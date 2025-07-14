@@ -107,6 +107,7 @@ uint16_t get_node_id_from_linkaddr(const linkaddr_t *addr) {
       return i;
     }
   }
+  LOGS_WARN("I can't find the correct node_id\n\r");
   return -1;
 }
 
@@ -376,6 +377,8 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
   leds_single_on(LEDS_LED2);
   LOG_INFO("Receiving RT_REPORT_PACEKT:\n");
   struct rt_entry_pkt *pkt = (struct rt_entry_pkt *)data;
+  print_rt_entries_pkt(pkt);
+  print_local_routing_table();
   pkt->hop_count++;
   int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
   // avoid unstalbe link hard decision
@@ -387,9 +390,22 @@ static void DAO_PACKET_callback(const void *data, uint16_t len,
   patch_update_local_rt_table(src,src,pkt->hop_count,rssi,pkt->seq_id);
     LOG_INFO("Master Node get RT_REPORT_PACKET:\n");
     int src_index = get_node_id_from_linkaddr(&pkt->src);
+    if(src_index == -1)
+    {
+
+      return;
+  
+    }
+
+
     known_nodes[src_index] = 1;
     // update the adjacency matrix
     int dst_index = get_node_id_from_linkaddr(&pkt->rt_dest);
+    if(dst_index == -1)
+    {
+      return;
+    }
+
     if (src_index == dst_index) 
     {
       adjacency_matrix[src_index][dst_index] = 255;
@@ -504,20 +520,31 @@ static void HEARTBEAT_PACKET_callback(const void *data, uint16_t len,
   }
 }
 
+
+static volatile int receivd_new_node_packet = 0;
+
 void NEWNODE_PACKET_callback(const void *data, uint16_t len,
                             const linkaddr_t *src, const linkaddr_t *dest)
 {
   // Only process packets with the correct type
   if(node_id == MASTER_NODE_ID) {
-    net_is_stable = 0;
-    memb_init(&rt_mem);
-    list_init(local_rt_table);
-    insert_entry_to_rt_table(&linkaddr_node_addr, &linkaddr_node_addr, 0, 0, 0);
-    for (int i = 0; i < MAX_NODES; i++) {
-      for (int j = 0; j < MAX_NODES; j++) {
-        adjacency_matrix[i][j] = (i == j) ? 255 : 0;
+    if(!receivd_new_node_packet)
+    {
+      net_is_stable = 0;
+      memb_init(&rt_mem);
+      list_init(local_rt_table);
+      insert_entry_to_rt_table(&linkaddr_node_addr, &linkaddr_node_addr, 0, 0, 0);
+      for (int i = 0; i < MAX_NODES; i++) {
+        for (int j = 0; j < MAX_NODES; j++) {
+          adjacency_matrix[i][j] = (i == j) ? 255 : 0;
+        }
       }
+      //last_seq_id=1; 
     }
+    else{
+
+    }
+    
   }
   else;
 }
@@ -565,13 +592,16 @@ static uint8_t hello_process_cnt = 0;
 
 PROCESS(hello_process, "HELLO Flooding Process");
 PROCESS(sensro_report_process, "Hello Dummy Process");
-PROCESS(delivery_ch_process, "choosing CH Process");
+//PROCESS(delivery_ch_process, "choosing CH Process");
 PROCESS(heartbeat_hearing_process, "Master uses this process to monitor node lost");
 
 
-AUTOSTART_PROCESSES(&hello_process, &sensro_report_process,
-                      &delivery_ch_process,&heartbeat_hearing_process);
-                              
+//AUTOSTART_PROCESSES(&hello_process, &sensro_report_process,
+//                      &delivery_ch_process,&heartbeat_hearing_process);
+                            
+                      
+AUTOSTART_PROCESSES(&hello_process, &sensro_report_process,&heartbeat_hearing_process);
+          
 PROCESS_THREAD(hello_process, ev, data) {
   static struct etimer timer;
   static struct dio_packet my_hello_pkt;
@@ -588,28 +618,29 @@ PROCESS_THREAD(hello_process, ev, data) {
     LOG_INFO("TX power set to %d dBm\n", TX_POWER);
   }
 
-  //get_index_from_addr(&linkaddr_node_addr);
 
   memb_init(&rt_mem);
   list_init(local_rt_table);
   insert_entry_to_rt_table(&linkaddr_node_addr, &linkaddr_node_addr, 0, 0, 0);
+  print_local_routing_table();
   for (int i = 0; i < MAX_NODES; i++) {
     for (int j = 0; j < MAX_NODES; j++) {
       adjacency_matrix[i][j] = (i == j) ? 255 : 0;
     }
   }
- 
   nullnet_set_input_callback(HELLO_Callback);
-
-  
   last_seq_id = 1;
-  if(!net_is_stable) {
-    battery[0] = ((float)get_millivolts(saadc_sensor.value(BATTERY_SENSOR))/3700);
-    memset(known_nodes, 0, sizeof(known_nodes));
+  while(1) {
+    //memset(known_nodes, 0, MAX_NODES*sizeof(known_nodes));
     etimer_set(&timer, CLOCK_SECOND * HELLO_INTERVAL);
-    while(1) {
-      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
+    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
+    if(!net_is_stable) 
+    {
+      battery[0] = ((float)get_millivolts(saadc_sensor.value(BATTERY_SENSOR))/3700);
       if(hello_process_cnt >= 8) {
+        last_seq_id = 1;
+        receivd_new_node_packet = 0;
+        hello_process_cnt = 0;
         net_is_stable = 1;
         LOG_INFO("The whole Network is stable\n");
         PROCESS_EXIT();  
@@ -702,7 +733,7 @@ PROCESS_THREAD(sensro_report_process, ev, data)
 
   PROCESS_END();
 }
-
+/*
 PROCESS_THREAD(delivery_ch_process, ev, data)
 {
 	static struct etimer choose_timer;
@@ -756,18 +787,17 @@ PROCESS_THREAD(delivery_ch_process, ev, data)
                 e->tot_hop, e->metric, e->seq_no);
           
       }
-      LOG_INFO("+------------------+ ------------------------ +--------------------+\n");
       }
-      
+      LOG_INFO("+------------------+ ------------------------ +--------------------+\n");
 
     }
-    advertise_node_addr((uint8_t*)link_table);
+    //advertise_node_addr((uint8_t*)link_table);
 		etimer_reset(&choose_timer);
 	}
 
 	PROCESS_END();
 }
-
+*/
 //CH PROCESS
 PROCESS_THREAD(heartbeat_hearing_process, ev, data){
   PROCESS_BEGIN();

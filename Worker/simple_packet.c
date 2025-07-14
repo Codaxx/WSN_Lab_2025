@@ -134,16 +134,7 @@ void print_adjacency_matrix()
   }
 }
 
-int get_index_from_addr(const linkaddr_t *addr)
-{
-  for (int i = 0; i < num_known_nodes; i++) {
-    if (linkaddr_cmp(addr, &node_index_to_addr[i])) {
-      return i;
-    }
-  }
 
-  return -1;
-}
 
 const linkaddr_t *get_next_hop_to(const linkaddr_t *dest, int is_permanent)
 {
@@ -582,7 +573,6 @@ PROCESS_THREAD(hello_process, ev, data) {
     LOG_INFO("TX power set to %d dBm\n", TX_POWER);
   }
 
-  get_index_from_addr(&linkaddr_node_addr);
   for (int i = 0; i < MAX_NODES; i++) {
     for (int j = 0; j < MAX_NODES; j++) {
       adjacency_matrix[i][j] = (i == j) ? 255 : 0;
@@ -600,7 +590,8 @@ PROCESS_THREAD(hello_process, ev, data) {
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
     hello_process_cnt++;
     if(hello_process_cnt >= 5) {
-      if(linkaddr_cmp(&addr_master,NULL))
+      int guess_master_id = get_node_id_from_linkaddr(&addr_master);
+      if(guess_master_id == 65535)
       {
         net_rejoin = 1;
         process_post(&rejoin_process, rejoin_event, NULL);
