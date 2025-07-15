@@ -11,6 +11,8 @@
 #include<string.h>
 #include<stdio.h>
 
+#define RSSI_LIMITATION (-60)
+
 typedef struct head_sub_info
 {
     unsigned char   pkt_type;
