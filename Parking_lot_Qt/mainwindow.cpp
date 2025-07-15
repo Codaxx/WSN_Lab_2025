@@ -414,9 +414,9 @@ void MainWindow::receive() {
                 for (int i = 1; i <= 7; ++i) {
                     // Skip the nodes that are cluster heads
                     if (i != head1 && i != head2 && i != head3) {
-                        // if (nodes.at(i)->getType() == Node::ClusterHead) {
-                        //     nodes.at(i)->setType(Node::Normal);
-                        // }
+                        if (nodes.at(i)->getType() == Node::ClusterHead) {
+                            nodes.at(i)->setType(Node::Normal);
+                        }
                         nodes.at(i)->setPos(nodePositions[positionIndex]);
                         positionIndex++;
                     }
