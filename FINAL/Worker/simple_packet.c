@@ -27,6 +27,8 @@
 // used for recording the packet seq, prevent loop
 static uint16_t last_seq_id = 0;
 static linkaddr_t addr_master;
+volatile static uint8_t net_is_stable;
+static uint8_t hello_forward_time;
 
 static short adjacency_matrix[MAX_NODES][MAX_NODES];  
 static  linkaddr_t node_index_to_addr[MAX_NODES] = {
@@ -43,7 +45,7 @@ static volatile uint8_t net_rejoin = 0;
 static int num_known_nodes = MAX_NODES;
 
 // sensor data transmission
-static uint8_t trans_flag;
+static uint8_t trans_flag = 1;
 static int distance_buffer[BUFFER_SIZE], light_buffer[BUFFER_SIZE], temperature_buffer[BUFFER_SIZE];
 static int global_index;
 static int distance_av_0, light_av_0, temperature_av_0;
@@ -59,7 +61,7 @@ MEMB(permanent_rt_mem,rt_entry,MAX_NODES);
 
 // heart beat
 static volatile uint8_t Node_death;
-static uint8_t heart_record[MAX_NODES];
+// static uint8_t heart_record[MAX_NODES];
 //static linkaddr_t addr_ch;
 //static uint8_t is_ch;
 
@@ -221,11 +223,7 @@ void patch_update_local_rt_table(const linkaddr_t *dst, const linkaddr_t *next,u
           e->metric = metric;
         }
       } 
-
     }
-
-
-
 }
 
 void print_rt_entries_pkt(const struct rt_entry_pkt *pkt)
@@ -291,11 +289,10 @@ static void routing_report(const linkaddr_t *dest, uint8_t hop, int8_t rssi, uin
     pkt.rt_metric  = iter->metric;
     pkt.rt_seq_no  = iter->seq_no;
 
-    clock_wait(CLOCK_SECOND / 20);  // wait 50 ms
+    // clock_wait(CLOCK_SECOND / 20);  // wait 50 ms
     nullnet_buf = (uint8_t *)&pkt;
     nullnet_len = sizeof(pkt);
     NETSTACK_NETWORK.output(dest); 
-
   }
   LOG_INFO("I have sent RT_REPORT_PACKET\n");
   uint16_t dest_id = get_node_id_from_linkaddr(dest);
@@ -341,11 +338,11 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
     last_seq_id = pkt->seq_id;
   }
   // Avoid loops: if already seen, drop
-  else if((pkt->seq_id <=last_seq_id) && parent_is_in_rt_table(&report_src)){
-    leds_single_off(LEDS_LED2);
-    LOG_INFO("The Packet has been Processed\r\n");
-    return;
-  }
+  //else if((pkt->seq_id <=last_seq_id) && parent_is_in_rt_table(&report_src)){
+  //  leds_single_off(LEDS_LED2);
+  //  LOG_INFO("The Packet has been Processed\r\n");
+  //  return;
+  // }
   last_seq_id = pkt->seq_id;
   // processing the packet info
   
@@ -368,8 +365,12 @@ static void DIO_PACKET_callback(const void *data, uint16_t len,
   //print_local_routing_table();
   
   // Forward the packet
-  forward_hello(pkt);
 
+  if(hello_forward_time < 3){
+    forward_hello(pkt);
+    hello_forward_time ++;
+  }
+  
   // Reply the true source
   routing_report(&report_src, pkt->hop_count, rssi,pkt->seq_id);
   leds_single_off(LEDS_LED2);
@@ -446,7 +447,7 @@ static void ADVERTISE_PACKET_callback(const void *data, uint16_t len,
   LOG_INFO("  CH node:    %u\n", get_node_id_from_linkaddr(&(pkt->advertise_ch)));
   LOG_INFO("  Seq ID:          %u\n", pkt->seq_id);
   //LOG_INFO("Hello Packet Process begin\r\n");
-  if(rssi <= -75)
+  if(rssi <= RSSSI_TH )
   {
     LOG_WARN("low RSSI DAO, rejected\n\r");
     return;
@@ -486,15 +487,21 @@ static void ADVERTISE_PACKET_callback(const void *data, uint16_t len,
 static void HEARTBEAT_PACKET_callback(const void *data, uint16_t len, 
                             const linkaddr_t *src, const linkaddr_t *dest){
   heartbeat_packet* pkt = (heartbeat_packet*)data;
-  linkaddr_t addr = pkt->src;
-  int index = get_node_id_from_linkaddr(&addr);
-  if(heart_record[index]>0){
-    heart_record[index] --;;
+  int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
+  linkaddr_t des = pkt->des;
+  patch_update_local_rt_table(&pkt->src, &pkt->src, 1, rssi, 0);
+  if(linkaddr_cmp(&des, &linkaddr_node_addr)){
+    linkaddr_copy(&pkt->des, get_next_hop_to(&addr_master, 0));;
+    nullnet_buf = (uint8_t *)pkt;
+    nullnet_len = sizeof(*pkt);
+    NETSTACK_NETWORK.output(NULL);
+    routing_report(&pkt->des, 2, rssi, 10);
   }
 }
 
 
 static int board_cast_rejoion = 0;
+static uint8_t received_6_flag;
 
 void NEWNODE_PACKET_callback(const void *data, uint16_t len,
                             const linkaddr_t *src, const linkaddr_t *dest)
@@ -502,9 +509,7 @@ void NEWNODE_PACKET_callback(const void *data, uint16_t len,
   const newnode_packet *pkt = (const newnode_packet *)data;
 
   // Only process packets with the correct type
-  if(node_id == MASTER_NODE_ID) {
-  }
-  else{
+  
     if(linkaddr_cmp(&addr_master,NULL))
     {
       if(!board_cast_rejoion)
@@ -514,15 +519,12 @@ void NEWNODE_PACKET_callback(const void *data, uint16_t len,
         NETSTACK_NETWORK.output(NULL);
         board_cast_rejoion = 1;
       }
-      else;
     }
     else{
       nullnet_buf = (uint8_t *)pkt;
       nullnet_len = sizeof(*pkt);
       NETSTACK_NETWORK.output(get_next_hop_to(&addr_master, 0));
     }
-  }
-  
 }
 
 static void HELLO_Callback(const void *data, uint16_t len,
@@ -533,10 +535,14 @@ static void HELLO_Callback(const void *data, uint16_t len,
   LOG_INFO("<< Received packet, type = %d, len = %d\n", type, len);
   switch(type) {
     case HELLO_PACKET:
+      net_is_stable  = 0;
+      printf("State is not stable\n\n");
       DIO_PACKET_callback(data, len, src, dest);
       leds_single_off(LEDS_LED2);
       break;
     case RT_REPORT_PACKET:
+      // net_is_stable  = 0;
+      printf("State is not stable\n\n");
       DAO_PACKET_callback(data, len, src, dest);
       leds_single_off(LEDS_LED2);
       break;
@@ -545,6 +551,8 @@ static void HELLO_Callback(const void *data, uint16_t len,
       leds_single_off(LEDS_LED2);
       break;
     case ADVERTISE_PACKET:
+      printf("State is stable\n\n");
+      net_is_stable = 1;
       ADVERTISE_PACKET_callback(data, len, src, dest);
       leds_single_off(LEDS_LED2);
       break;
@@ -553,7 +561,13 @@ static void HELLO_Callback(const void *data, uint16_t len,
       leds_single_off(LEDS_LED2);
       break;
     case NEWNODE_PACKET:
+      if(received_6_flag){
+        return;
+      }
+      net_is_stable  = 0;
+      printf("State is not stable\n\n");
       NEWNODE_PACKET_callback(data, len, src, dest);
+      received_6_flag = 1;
       leds_single_off(LEDS_LED2);
       break;
 
@@ -568,13 +582,13 @@ process_event_t rejoin_event;
 static uint8_t hello_process_cnt = 0;
 
 PROCESS(hello_process, "HELLO Flooding Process");
-PROCESS(sensro_report_process, "Hello Dummy Process");
-PROCESS(heart_beat_trans_process, "transmit heart beating signal");
-PROCESS(heartbeat_hearing_process, "Master uses this process to monitor node lost");
+PROCESS(sensor_report_process, "Hello Dummy Process");
+// PROCESS(heart_beat_trans_process, "transmit heart beating signal");
+PROCESS(heartbeat_pass_process, "Woker uses this process to transmit heartbeat");
 // PROCESS(rejoin_process, "Rejoining the network");
 
-AUTOSTART_PROCESSES(&hello_process, &sensro_report_process,
-                      &heart_beat_trans_process, &heartbeat_hearing_process);
+AUTOSTART_PROCESSES(&hello_process, &sensor_report_process,
+                       &heartbeat_pass_process);
 
 PROCESS_THREAD(hello_process, ev, data) {
   static struct etimer timer;
@@ -633,7 +647,7 @@ PROCESS_THREAD(hello_process, ev, data) {
   PROCESS_END();
 }
 
-PROCESS_THREAD(sensro_report_process, ev, data)
+PROCESS_THREAD(sensor_report_process, ev, data)
 {
   static struct etimer sensor_reading_timer;
 	static int light_raw, distance_raw;
@@ -643,124 +657,100 @@ PROCESS_THREAD(sensro_report_process, ev, data)
   PROCESS_BEGIN();
   etimer_set(&sensor_reading_timer, CLOCK_SECOND*3);
 
-  if(node_id == MASTER_NODE_ID) {
-  }
-  else{
     while(1) {
-      
       PROCESS_WAIT_EVENT();
-      // read raw data from ADC
-      light_raw = saadc_sensor.value(P0_30);
-      distance_raw = saadc_sensor.value(P0_31);
-      
-      // get sensor data
-      light_value = get_light_lux(light_raw);
-      distance_value = get_distance(distance_raw);
-      voltage = get_millivolts(saadc_sensor.value(BATTERY_SENSOR));
-      temperature = temperature_sensor.value(0)/4;
+          // read raw data from ADC
+        light_raw = saadc_sensor.value(P0_30);
+        distance_raw = saadc_sensor.value(P0_31);
+        
+        // get sensor data
+        light_value = get_light_lux(light_raw);
+        distance_value = get_distance(distance_raw);
+        voltage = get_millivolts(saadc_sensor.value(BATTERY_SENSOR));
+        temperature = temperature_sensor.value(0)/4;
 
-      distance_buffer[global_index] = distance_value;
-      light_buffer[global_index] = light_value;
-      temperature_buffer[global_index] = temperature;
-      global_index ++;
-      if(global_index>=BUFFER_SIZE){
-        distance_av_cal();
-        light_av_cal();
-        temperture_av_cal();
-        global_index = 0;
-        trans_flag = 1;
-      }
-      if(ABS(distance_av_1-distance_av_0) >= DIS_THRES && ABS(light_av_1-light_av_0) >= LIGHT_THRES){
-        trans_flag = 1;
-      }
-      // assign data to packet;
-      if(trans_flag){
-        packet.type = 3;
-        linkaddr_copy(&packet.source, &linkaddr_node_addr);
-        packet.light_lux = light_av_0;
-        packet.distance = distance_av_0;
-        packet.battery = voltage;
-        packet.temperature = temperature;
-
-        // transmit data to master
-        const linkaddr_t *next_hop = get_next_hop_to(&addr_master,0);
-        if(next_hop != NULL) {
-          nullnet_buf = (uint8_t *)&packet;
-          nullnet_len = sizeof(packet);
-          NETSTACK_NETWORK.output(next_hop);
-          LOG_INFO("Sent sensor data to master. Temp=%i, Distance=%i, Battery=%i, Light_Lux%i\n",
-            packet.temperature,packet.distance,packet.battery,packet.light_lux );
-        } else {
-          LOG_WARN("No route to master!\n");
+        distance_buffer[global_index] = distance_value;
+        light_buffer[global_index] = light_value;
+        temperature_buffer[global_index] = temperature;
+        global_index ++;
+        if(global_index>=BUFFER_SIZE){
+          distance_av_cal();
+          light_av_cal();
+          temperture_av_cal();
+          global_index = 0;
         }
+        if(ABS(distance_av_1-distance_av_0) >= DIS_THRES || ABS(light_av_1-light_av_0) >= LIGHT_THRES){
+          trans_flag = 1;
+        }
+        // assign data to packet;
+        net_is_stable = 1;
+        if(trans_flag && net_is_stable){
+          packet.type = 3;
+          linkaddr_copy(&packet.source, &linkaddr_node_addr);
+          packet.light_lux = light_av_0;
+          packet.distance = distance_av_0;
+          packet.battery = voltage;
+          packet.temperature = temperature;
 
-        trans_flag = 0;
-      }  
+          // transmit data to master
+          const linkaddr_t *next_hop = get_next_hop_to(&addr_master, 0);
+          if(next_hop != NULL) {
+            nullnet_buf = (uint8_t *)&packet;
+            nullnet_len = sizeof(packet);
+            NETSTACK_NETWORK.output(next_hop);
+            LOG_INFO("Sent sensor data to master. Temp=%i, Distance=%i, Battery=%i, Light_Lux%i\n",
+            packet.temperature,packet.distance,packet.battery,packet.light_lux);
+          } else {
+            LOG_WARN("No route to master!\n");
+          }
+          trans_flag = 0;
+        }
+        if(received_6_flag>0) received_6_flag++;
+        if(received_6_flag>4) received_6_flag = 0;
+        if(hello_forward_time >= 3) hello_forward_time ++;
+        if(hello_forward_time > 6) hello_forward_time = 0;
       etimer_reset(&sensor_reading_timer);
     }
-   
-  }
-  
-
   PROCESS_END();
 }
 
-PROCESS_THREAD(heart_beat_trans_process, ev, data){
-  PROCESS_BEGIN();
-  static struct etimer et;
-
-  etimer_set(&et, CLOCK_SECOND*5);
-  heartbeat_packet heart = {
-    .type = HEARTBEAT_PACKET,
-    .src = linkaddr_node_addr
-  };
-
-  while (1)
-  {
-    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-    nullnet_buf = (uint8_t*)&heart;
-    nullnet_len = sizeof(heart);
-    NETSTACK_NETWORK.output(NULL);
-    etimer_reset(&et);
-  }
-  PROCESS_END();
-}
-
-// PROCESS_THREAD(rejoin_process, ev, data){
+// PROCESS_THREAD(heart_beat_trans_process, ev, data){
 //   PROCESS_BEGIN();
-//   static struct etimer timer;
-//   etimer_set(&timer, CLOCK_SECOND*3);
-//   while(1) {
-//     PROCESS_WAIT_EVENT();
-//     if(net_rejoin == 1) {
-//         newnode_packet pkt;
-//         pkt.type = NEWNODE_PACKET;
-//         linkaddr_copy(&pkt.src, &linkaddr_node_addr);
-//         nullnet_buf = (uint8_t *)&pkt;
-//         nullnet_len = sizeof(pkt);
-//         NETSTACK_NETWORK.output(NULL); 
-//     }
-//     etimer_reset(&timer);
+//   static struct etimer et;
+
+//   etimer_set(&et, CLOCK_SECOND*5);
+//   heartbeat_packet heart = {
+//     .type = HEARTBEAT_PACKET,
+//     .src = linkaddr_node_addr
+//   };
+
+//   while (1)
+//   {
+//     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
+//     nullnet_buf = (uint8_t*)&heart;
+//     nullnet_len = sizeof(heart);
+//     NETSTACK_NETWORK.output(NULL);
+//     etimer_reset(&et);
 //   }
 //   PROCESS_END();
 // }
 
-PROCESS_THREAD(heartbeat_hearing_process, ev, data){
+PROCESS_THREAD(heartbeat_pass_process, ev, data){
   PROCESS_BEGIN();
   static struct etimer et;
-  etimer_set(&et, CLOCK_SECOND*5);
+  etimer_set(&et, CLOCK_SECOND*8);
+  heartbeat_packet my_heart;
   while (1)
   {
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
-    for(int i=0;i<MAX_NODES;i++){
-      if(heart_record[i] >= TOLERANCE){
-        memset(&heart_record, 0, MAX_NODES);
-        Node_death = 1;
-        break;
-      }
-      else{
-        heart_record[i] ++ ;
-      }
+    printf("Ready to send heatbeat, %d", net_is_stable);
+    if(net_is_stable){
+      linkaddr_copy(&my_heart.src, &linkaddr_node_addr);
+      my_heart.type = HEARTBEAT_PACKET;
+      linkaddr_copy(&my_heart.des, get_next_hop_to(&addr_master,0));
+      nullnet_buf = (uint8_t *)&my_heart;
+      nullnet_len = sizeof(my_heart);
+      NETSTACK_NETWORK.output(NULL);
     }
     etimer_reset(&et);
   }

@@ -15,10 +15,11 @@ typedef struct rt_entry{
 }rt_entry;
 
 
-typedef struct heartbeat_packet
+typedef struct
 {
-  uint8_t type;  
+  uint8_t type;
   linkaddr_t src;
+  linkaddr_t des;
 }heartbeat_packet;
 
 

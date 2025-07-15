@@ -15,7 +15,7 @@
 
 // Max number of nodes in the network.
 #define MASTER_NODE_ID 64849
-#define RSSSI_TH     -70
+#define RSSSI_TH     (-75)
 
 
 
@@ -27,8 +27,8 @@
 
 // Sensor 
 #define BUFFER_SIZE	3
-#define DIS_THRES	20
-#define	LIGHT_THRES	500
+#define DIS_THRES	10
+#define	LIGHT_THRES	100
 #define	TEM_THRES	10
 
 // Hello Process Parameters for system 

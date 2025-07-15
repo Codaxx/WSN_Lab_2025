@@ -17,7 +17,7 @@ int get_distance(int raw_value){
 	float voltage_ratio;
 
 	voltage_ratio = (float)raw_value/4096;
-	dis = 4.8/(voltage_ratio-0.02);
+	dis = 4.8/(voltage_ratio);
 	
 	return (int)dis;
 }

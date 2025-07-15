@@ -11,11 +11,6 @@
 #include<string.h>
 #include<stdio.h>
 
-<<<<<<< HEAD
-=======
-#define RSSI_LIMITATION (-60)
-
->>>>>>> f4f2fdf1e57a0e85130829238400ac08ac7f5c27
 typedef struct head_sub_info
 {
     unsigned char   pkt_type;
