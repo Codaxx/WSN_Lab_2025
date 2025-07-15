@@ -266,7 +266,7 @@ int get_direct_link(uint8_t* link_table, int id) {
 void advertise_node_addr(uint8_t* link_table,unsigned char* head_list)
 {
   static int find_flag = 0;
-  matrix_printer(link_table, MAX_NODES);
+  //matrix_printer(link_table, MAX_NODES);
   int ch_direct_row_idx = 1;
   for (;ch_direct_row_idx<MAX_NODES;ch_direct_row_idx++)
   {
@@ -275,15 +275,15 @@ void advertise_node_addr(uint8_t* link_table,unsigned char* head_list)
       LOG_INFO("FIND CONECTION\n\r");
       struct advertise_packet pkt;
       pkt.type = ADVERTISE_PACKET;
-      linkaddr_copy(&pkt.dest,&linkaddr_node_addr);
+      linkaddr_copy(&pkt.dest,&node_index_to_addr[ch_direct_row_idx]);
       linkaddr_copy(&pkt.advertise_ch,&linkaddr_node_addr);
       pkt.tot_hop = 1;
       pkt.seq_id = 5;
-      LOG_INFO("Sending ADVERTISE packet:\n");
-      LOG_INFO("  Dest node:       %u\n", get_node_id_from_linkaddr(&linkaddr_node_addr));
-      LOG_INFO("  Direct Link      %u\n", get_direct_link((uint8_t*)link_table,ch_direct_row_idx));
-      LOG_INFO("  CH node:    %u\n", get_node_id_from_linkaddr(&linkaddr_node_addr));
-      LOG_INFO("  Seq ID:          %u\n", pkt.seq_id);
+      //LOG_INFO("Sending ADVERTISE packet:\n");
+      //LOG_INFO("  Dest node:       %u\n", get_node_id_from_linkaddr(&linkaddr_node_addr));
+      //LOG_INFO("  Direct Link      %u\n", get_direct_link((uint8_t*)link_table,ch_direct_row_idx));
+      //LOG_INFO("  CH node:    %u\n", get_node_id_from_linkaddr(&linkaddr_node_addr));
+      //LOG_INFO("  Seq ID:          %u\n", pkt.seq_id);
       nullnet_buf = (uint8_t *)&pkt;
       nullnet_len = sizeof(pkt);
       NETSTACK_NETWORK.output(& node_index_to_addr[ch_direct_row_idx]);
@@ -321,10 +321,10 @@ void advertise_node_addr(uint8_t* link_table,unsigned char* head_list)
         pkt.tot_hop = get_hop((uint8_t*)link_table,i);
         pkt.seq_id = 5;
         LOG_INFO("Sending ADVERTISE packet:\n");
-        LOG_INFO("  Dest node:       %u\n", get_node_id_from_linkaddr(&node_index_to_addr[i]));
-        LOG_INFO("  Direct Link      %u\n", get_direct_link((uint8_t*)link_table,i));
-        LOG_INFO("  CH node:    %u\n", get_node_id_from_linkaddr(&advertise_ch_addr));
-        LOG_INFO("  Seq ID:          %u\n", pkt.seq_id);
+        //LOG_INFO("  Dest node:       %u\n", get_node_id_from_linkaddr(&node_index_to_addr[i]));
+        //LOG_INFO("  Direct Link      %u\n", get_direct_link((uint8_t*)link_table,i));
+        //LOG_INFO("  CH node:    %u\n", get_node_id_from_linkaddr(&advertise_ch_addr));
+        //LOG_INFO("  Seq ID:          %u\n", pkt.seq_id);
         nullnet_buf = (uint8_t *)&pkt;
         nullnet_len = sizeof(pkt);
         linkaddr_copy(&direct_link_addr, &node_index_to_addr[get_direct_link((uint8_t*)link_table,i)]);
@@ -433,12 +433,12 @@ static void ADVERTISE_PACKET_callback(const void *data, uint16_t len,
     LOG_WARN("Wrong packet size: %u\n", len);
     return;
   }
-  struct advertise_packet *pkt = (struct advertise_packet *)data;
+  //struct advertise_packet *pkt = (struct advertise_packet *)data;
   int8_t rssi = (int8_t)packetbuf_attr(PACKETBUF_ATTR_RSSI);
-  LOG_INFO("Geting ADVERTISE packet:\n");
-  LOG_INFO("  Dest node:       %u\n", get_node_id_from_linkaddr(&pkt->dest));
-  LOG_INFO("  CH node:    %u\n", get_node_id_from_linkaddr(&pkt->advertise_ch));
-  LOG_INFO("  Seq ID:          %u\n", pkt->seq_id);
+  //LOG_INFO("Geting ADVERTISE packet:\n");
+  //LOG_INFO("  Dest node:       %u\n", get_node_id_from_linkaddr(&pkt->dest));
+  //LOG_INFO("  CH node:    %u\n", get_node_id_from_linkaddr(&pkt->advertise_ch));
+  //LOG_INFO("  Seq ID:          %u\n", pkt->seq_id);
   //LOG_INFO("Hello Packet Process begin\r\n");
   if(rssi <= -75)
   {
@@ -457,7 +457,7 @@ static void HEARTBEAT_PACKET_callback(const void *data, uint16_t len,
     heart_record[index] --;;
   }
   LOG_INFO("Receiving Heart Beat Packet\n\r");
-  LOG_INFO("  SRc node:       %u\n", get_node_id_from_linkaddr(&pkt->des));
+  LOG_INFO("  Src node:       %u\n", get_node_id_from_linkaddr(&pkt->des));
   LOG_INFO("  Dest node:     %u\n", get_node_id_from_linkaddr(&pkt->src));
 
 }
@@ -497,7 +497,7 @@ static void HELLO_Callback(const void *data, uint16_t len,
 {
   leds_single_on(LEDS_LED2);
   uint8_t type = *((uint8_t *)data);
-  LOG_INFO("<< Received packet, type = %d, len = %d\n", type, len);
+  //LOG_INFO("<< Received packet, type = %d, len = %d\n", type, len);
   switch(type) {
     case HELLO_PACKET:
       DIO_PACKET_callback(data, len, src, dest);
@@ -610,7 +610,7 @@ PROCESS_THREAD(delivery_ch_process, ev, data)
       unsigned char head_list[3] ={0};
       short* rssi = (short*)adjacency_matrix;
       volatile static unsigned char link_table[MAX_NODES*MAX_NODES]= {0};
-      print_local_routing_table();
+      //print_local_routing_table();
       print_adjacency_matrix();
       // todo the adjacency_matrix need to stable, rssi need to large -30
       for(int i=0; i<MAX_NODES; i++){
@@ -662,6 +662,7 @@ PROCESS_THREAD(heartbeat_hearing_process, ev, data){
           net_is_stable = 0;
           memb_init(&rt_mem);
           list_init(local_rt_table);
+
           insert_entry_to_rt_table(&linkaddr_node_addr, &linkaddr_node_addr, 0, 0, 0);
           for (int i = 0; i < MAX_NODES; i++) {
             for (int j = 0; j < MAX_NODES; j++) {
@@ -669,7 +670,6 @@ PROCESS_THREAD(heartbeat_hearing_process, ev, data){
             }
           }
           last_seq_id = 1;
-          net_is_stable = 0;
           break;
         }
         else{
