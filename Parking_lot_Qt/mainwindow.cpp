@@ -372,6 +372,9 @@ void MainWindow::receive() {
                     // errorLabel->show();
                     // // Hold the error message for 5s
                     // QTimer::singleShot(5000, errorLabel, &QLabel::deleteLater);
+
+                    evaluateParkingStatus(lost);
+                    updateGraphBoxStyle();
                 }
             }
 
