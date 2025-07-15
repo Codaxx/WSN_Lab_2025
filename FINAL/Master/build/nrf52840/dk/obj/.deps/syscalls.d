@@ -1,2 +1,2 @@
 build/nrf52840/dk/obj/syscalls.o: \
- /home/shh/contiki-ng/os/lib/newlib/syscalls.c
+ /home/go49jan/contiki-ng/os/lib/newlib/syscalls.c

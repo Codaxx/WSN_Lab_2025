@@ -32,7 +32,7 @@
 #define	TEM_THRES	10
 
 // Hello Process Parameters for system 
-#define HELLO_INTERVAL 5
+#define HELLO_INTERVAL 1
 #define HELLO_SEQ_ID   100  
 
 
