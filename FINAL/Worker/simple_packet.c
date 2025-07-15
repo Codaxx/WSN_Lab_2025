@@ -427,7 +427,7 @@ static void SENSOR_PACKET_callback(const void *data, uint16_t len,
             src, recv_message.light_lux, recv_message.battery*100/3800);
     printf("Node: %d SensorType: 2 Value: %d Battery: %d \n\r",
             src, recv_message.distance, recv_message.battery*100/3800);
-
+      
 
 	}
 }
