@@ -1,4 +1,6 @@
-A Contiki-NG based wireless sensor network for underground parking management using nRF52840 DK boards. It features a custom self-written multi-hop routing protocol and algorithm for automatic network discovery, route maintenance and failure recovery , and a Qt-based GUI to visualize real-time parking‐spot occupancy and network topology . All sensor nodes run on nRF52840 hardware for low-power 2.4 GHz communication .
+A Contiki-NG based wireless sensor network for underground parking management using nRF52840 DK boards. It features a custom self-written multi-hop routing protocol and algorithm for automatic network discovery, 
+route maintenance and failure recovery, and a Qt-based GUI to visualize real-time parking‐spot occupancy and network topology.
+All sensor nodes run on nRF52840 hardware for low-power 2.4 GHz communication.
 
 
 Wireless Sensor Networks Laboratory
