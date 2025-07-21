@@ -1,0 +1,23 @@
+{
+  "makefile.configurations": [
+    {
+      "name": "contiki_default",
+      "makeArgs": [
+        "TARGET=nrf52840",
+        "on_board_sensors"
+      ]
+    },
+    {
+      "name": "contiki_upload",
+      "makeArgs": [
+        "TARGET=nrf52840",
+        "on_board_sensors.upload"
+      ]
+    }
+  ],
+  "files.associations": {
+    "temperature-sensor.h": "c",
+    "sensors.h": "c",
+    "contiki.h": "c"
+  }
+}

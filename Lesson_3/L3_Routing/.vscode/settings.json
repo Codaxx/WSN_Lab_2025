@@ -1,0 +1,19 @@
+{
+  "makefile.configurations": [
+    {
+      "name": "contiki_default",
+      "makeArgs": [
+        "TARGET=nrf52840",
+        "routing"
+      ]
+    },
+    {
+      "name": "contiki_upload",
+      "makeArgs": [
+        "TARGET=nrf52840",
+        "NODEID=0x1313",
+        "routing.upload"
+      ]
+    }
+  ]
+}

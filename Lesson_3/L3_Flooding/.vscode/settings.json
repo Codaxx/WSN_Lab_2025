@@ -1,0 +1,22 @@
+{
+  "makefile.configurations": [
+    {
+      "name": "contiki_default",
+      "makeArgs": [
+        "TARGET=nrf52840",
+        "flooding"
+      ]
+    },
+    {
+      "name": "contiki_upload",
+      "makeArgs": [
+        "TARGET=nrf52840",
+        "flooding.upload"
+      ]
+    }
+  ],
+  "files.associations": {
+    "nullnet.h": "c",
+    "packetbuf.h": "c"
+  }
+}

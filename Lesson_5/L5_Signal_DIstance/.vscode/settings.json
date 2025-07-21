@@ -1,0 +1,18 @@
+{
+  "makefile.configurations": [
+    {
+      "name": "contiki_default",
+      "makeArgs": [
+        "TARGET=nrf52840",
+        "signal_distance"
+      ]
+    },
+    {
+      "name": "contiki_upload",
+      "makeArgs": [
+        "TARGET=nrf52840",
+        "signal_distance.upload"
+      ]
+    }
+  ]
+}
